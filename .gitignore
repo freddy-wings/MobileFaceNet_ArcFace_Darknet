@@ -10,3 +10,5 @@ pretrained/events*
 
 build/
 mobilefacenet
+
+data/lfw/
