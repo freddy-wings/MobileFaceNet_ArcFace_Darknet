@@ -271,8 +271,5 @@ class MobileFacenetLDA(nn.Module):
 
 
 if __name__ == "__main__":
-    input = Variable(torch.FloatTensor(2, 3, 112, 96))
-    net = MobileFacenet()
-    print(net)
-    x = net(input)
-    print(x.shape)
+    from torchstat import stat
+    stat(MobileFacenet(1000), (3, 112, 96))
