@@ -26,4 +26,5 @@ TARGET_LINK_LIBRARIES(
 	${OpenCV_LIBS}
 	darknet
 	m
+	pthread
 )
