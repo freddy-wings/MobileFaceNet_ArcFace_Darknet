@@ -100,7 +100,7 @@ float _l2(float *vector, int n)
     return l2;
 }
 
-void norm(float* vector, int n)
+void normalize_(float* vector, int n)
 {
     int i = 0;
     
@@ -113,7 +113,7 @@ void norm(float* vector, int n)
 
 float distCosine(float* vec1, float* vec2, int n)
 {
-    norm(vec1, n); norm(vec2, n);
+    normalize_(vec1, n); normalize_(vec2, n);
 
     float cos = 0;
     for (int i = 0; i < n; i++ ){
