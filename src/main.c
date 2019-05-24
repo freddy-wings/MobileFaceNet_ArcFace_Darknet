@@ -5,11 +5,13 @@
 
 int main(int argc, char** argv)
 {
-    if (find_arg(argc, argv, "--lfw")){
-        verify_lfw_images(argc, argv);
-    } else {
+    char* dataset = find_char_arg(argc, argv, "--dataset", NULL);
+    if (!dataset){
         verify_input_images(argc, argv);
+    } else if (0 == strcmp(dataset, "lfw")){
+        verify_lfw_images(argc, argv);
     }
+
     return 0;
 }
 

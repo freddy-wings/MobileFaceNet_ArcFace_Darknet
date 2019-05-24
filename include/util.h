@@ -1,5 +1,5 @@
-#ifndef __UTILES_H
-#define __UTILES_H
+#ifndef __UTIL_H
+#define __UTIL_H
 
 #include <opencv/cv.h>
 #include <opencv2/highgui/highgui_c.h>
