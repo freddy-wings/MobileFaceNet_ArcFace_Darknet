@@ -41,7 +41,7 @@ int verify_lfw_images(int argc, char** argv)
 {
     // ======================== INITIALIZE ======================== //
     float thresh = find_float_arg(argc, argv, "--thresh", 0.4);
-    FILE* fp = fopen("bad_samples.txt", "w");
+    FILE* f = fopen("bad_samples.txt", "w");
     params p = initParams(argc, argv);
     network* pnet = load_mtcnn_net("PNet");
     network* rnet = load_mtcnn_net("RNet");
@@ -52,7 +52,8 @@ int verify_lfw_images(int argc, char** argv)
 
     // ========================= LODA DATA ======================== //
     printf("Reading LFW...");
-    int bad_samples = 0, correct_samples = 0;
+    int bad_samples = 0;
+    int tp=0, fp=0, tn=0, fn=0;
     list* pairs = get_lfw_pairs();
     printf("OK\n");
 
@@ -97,7 +98,7 @@ int verify_lfw_images(int argc, char** argv)
         detect_image(pnet, rnet, onet, im1, &n, &dets, p);
         if (n == 0){
             bad_samples += 1; 
-            fprintf(fp, "detected error: %d\n", i);
+            fprintf(f, "detected error: %d\n", i);
             printf("Image1 is not detected!\n"); 
             continue;
         }
@@ -109,7 +110,7 @@ int verify_lfw_images(int argc, char** argv)
         detect_image(pnet, rnet, onet, im2, &n, &dets, p);
         if (n == 0){
             bad_samples += 1; 
-            fprintf(fp, "detected error: %d\n", i);
+            fprintf(f, "detected error: %d\n", i);
             printf("Image2 is not detected!\n"); 
             continue;
         }
@@ -126,9 +127,22 @@ int verify_lfw_images(int argc, char** argv)
         float cosine = thresh;
         int pred = verify(mobilefacenet, crop1, crop2, &cosine);// if matched, pred = 1, else 0
         int gt   = (0 == strcmp(name1, name2));                 // if mathced, gt = 1, else 0
-        if (pred == gt) correct_samples += 1;
-        else {
-            fprintf(fp, "verify error: %d, dist=%3.2f\n", i, cosine);
+        if (gt == 1){
+            if (pred == 1){
+                tp += 1;
+            } else {
+                fn +1 ;
+            }
+        } else {
+            if (pred == 1){
+                fp += 1;
+            } else {
+                tn += 1;
+            }
+        }
+
+        if (gt != pred) {
+            fprintf(f, "verify error: %d, gt: %d, pred: %d, dist=%3.2f\n", i, gt, pred, cosine);
         }
         printf("Gt: %d  Pred: %d  Cosine: %3.2f\n", gt, pred, cosine);
 
@@ -142,11 +156,16 @@ int verify_lfw_images(int argc, char** argv)
     }
     
     // ========================= STATISTIC ======================== //
-    float correct_rate = (float)correct_samples / (float)(total_samples - bad_samples);
+    int detected_samples = total_samples - bad_samples;
+    float accuracy = (float)(tp + tn) / (float)detected_samples;
+    float precision = (float)(tp) / (float)(tp + fp);
+    float recall = (float)(tp) / (float)(tp + fn);
     printf("\033[2J"); printf("\033[1;1H");
-    printf("Total: %4d  Bad: %4d  Correct: %4d  Rate: %2.2f\n", 
-            total_samples, bad_samples, correct_samples, correct_rate);
-    fclose(fp);
+    printf("Total: %4d | Bad: %4d | Detected: %4d\n", 
+            total_samples, bad_samples, detected_samples);
+    printf("Accuracy: %2.2f | Precision: %2.2f | Recall: %2.2f\n", 
+            accuracy, precision, recall);
+    fclose(f);
 
     return 0;
 }
