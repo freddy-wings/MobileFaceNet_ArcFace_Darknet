@@ -52,11 +52,11 @@ image convert_mobilefacenet_image(image im)
  * Args:
  *      net:    {network*}  MobileFaceNet
  *      im1/2:  {image}     image of size `3 x H x W`
- *      thresh: {float}     threshold of verification.
+ *      cosine: {float*}    threshold of verification, will be replaced with cosion distance.
  * Returns:
  *      isOne:  {int}       if the same, return 1; else 0.
  * */
-int verify(network* net, image im1, image im2, float thresh)
+int verify(network* net, image im1, image im2, float* cosine)
 {
     assert(im1.w == W && im1.h == H);
     assert(im2.w == W && im2.h == H);
@@ -80,15 +80,17 @@ int verify(network* net, image im1, image im2, float thresh)
     memcpy(feat2 + N, X, N*sizeof(float));
 
     float dist = distCosine(feat1, feat2, N*2);
-    printf("\ncosine: %f\n", dist);
-    
-    if (dist < thresh){
-        return 0;
+    int is_one = -1;  
+    if (dist < *cosine){
+        is_one = 0;
     } else {
-        return 1;
+        is_one = 1;
     }
+    *cosine = dist;
 
     free(feat1); free(feat2);
     free_image(cvt1); free_image(cvt2);
+
+    return is_one;
 }
 

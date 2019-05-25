@@ -53,10 +53,12 @@ int verify_input_images(int argc, char** argv)
     printf("OK\n");
 
     printf("Verifying...");
-    int isOne = verify(mobilefacenet, crop1, crop2, 0.4);
+    float cosine = 0.4;
+    int is_one = verify(mobilefacenet, crop1, crop2, &cosine);
     printf("OK\n");
 
-    if (isOne){
+    printf("Cosine=%3.2f >>> ", cosine);
+    if (is_one){
         printf("Same\n");
     } else {
         printf("Different\n");
@@ -67,5 +69,5 @@ int verify_input_images(int argc, char** argv)
     free_image(warped1); free_image(warped2);
     free(dets);
 
-    return isOne;
+    return is_one;
 }

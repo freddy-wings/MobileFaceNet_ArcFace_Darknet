@@ -122,13 +122,14 @@ int verify_lfw_images(int argc, char** argv)
         image warped2 = align_image_with_landmark(crop2, landmark2, aligned);
         // show_image(warped1, "warped1", 10); show_image(warped2, "warped2", 0);
 
-        int pred = verify(mobilefacenet, crop1, crop2, 0.4);    // if matched, pred = 1, else 0
+        float cosine = 0.4;
+        int pred = verify(mobilefacenet, crop1, crop2, &cosine);// if matched, pred = 1, else 0
         int gt   = (0 == strcmp(name1, name2));                 // if mathced, gt = 1, else 0
         if (pred == gt) correct_samples += 1;
         else {
-            fprintf(fp, "verify error: %d\n", i);
+            fprintf(fp, "verify error: %d, dist=%3.2f\n", i, cosine);
         }
-        printf("Gt: %d  Pred: %d\n", gt, pred);
+        printf("Gt: %d  Pred: %d  Cosine: %3.2f\n", gt, pred, cosine);
 
         free(name1);    // free line(fgetl)
         free(dets);
