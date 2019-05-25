@@ -40,6 +40,7 @@ list* get_lfw_pairs()
 int verify_lfw_images(int argc, char** argv)
 {
     // ======================== INITIALIZE ======================== //
+    float thresh = find_float_arg(argc, argv, "--thresh", 0.4);
     FILE* fp = fopen("bad_samples.txt", "w");
     params p = initParams(argc, argv);
     network* pnet = load_mtcnn_net("PNet");
@@ -122,7 +123,7 @@ int verify_lfw_images(int argc, char** argv)
         image warped2 = align_image_with_landmark(crop2, landmark2, aligned);
         // show_image(warped1, "warped1", 10); show_image(warped2, "warped2", 0);
 
-        float cosine = 0.4;
+        float cosine = thresh;
         int pred = verify(mobilefacenet, crop1, crop2, &cosine);// if matched, pred = 1, else 0
         int gt   = (0 == strcmp(name1, name2));                 // if mathced, gt = 1, else 0
         if (pred == gt) correct_samples += 1;
