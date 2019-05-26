@@ -40,7 +40,7 @@ list* get_lfw_pairs()
 int verify_lfw_images(int argc, char** argv)
 {
     // ======================== INITIALIZE ======================== //
-    float thresh = find_float_arg(argc, argv, "--thresh", 0.4);
+    float thresh = find_float_arg(argc, argv, "--thresh", 0.3);
     FILE* f = fopen("bad_samples.txt", "w");
     params p = initParams(argc, argv);
     network* pnet = load_mtcnn_net("PNet");

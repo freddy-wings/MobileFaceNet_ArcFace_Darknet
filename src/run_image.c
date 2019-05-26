@@ -53,7 +53,7 @@ int verify_input_images(int argc, char** argv)
     printf("OK\n");
 
     printf("Verifying...");
-    float cosine = find_float_arg(argc, argv, "--thresh", 0.4);
+    float cosine = find_float_arg(argc, argv, "--thresh", 0.3);
     int is_one = verify(mobilefacenet, crop1, crop2, &cosine);
     printf("OK\n");
 
