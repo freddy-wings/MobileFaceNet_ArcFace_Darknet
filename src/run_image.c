@@ -18,6 +18,7 @@ int verify_input_images(int argc, char** argv)
     char* imgpath1 = find_char_arg(argc, argv, "--image1", "images/Aaron_Peirsol_0001.jpg");
     char* imgpath2 = find_char_arg(argc, argv, "--image2", "images/Aaron_Peirsol_0002.jpg");
     image im1 = load_image_color(imgpath1, 0, 0); 
+    // im1 = rotate_image(im1, 0.4);
     image im2 = load_image_color(imgpath2, 0, 0); 
     show_image(im1, "im1", 500); show_image(im2, "im2", 500);
     printf("OK\n");
@@ -32,6 +33,7 @@ int verify_input_images(int argc, char** argv)
     if (n == 0){printf("image 1 is not detected!\n"); return -1;}
     idx = keep_one(dets, n, im1); 
     bbox box1 = dets[idx].bx; landmark landmark1 = dets[idx].mk;
+    landmark1 = substract_bias(landmark1, box1.x1, box1.y1);
 
     // detect image2
     dets = realloc(dets, 0); n = 0;
@@ -40,6 +42,7 @@ int verify_input_images(int argc, char** argv)
     if (n == 0){printf("image 2 is not detected!\n"); return -1;}
     idx = keep_one(dets, n, im2); 
     bbox box2 = dets[idx].bx; landmark landmark2 = dets[idx].mk;
+    landmark2 = substract_bias(landmark2, box2.x1, box2.y1);
     printf("OK\n");
 
     // ==================== MOBILEFACENET STEP ==================== //

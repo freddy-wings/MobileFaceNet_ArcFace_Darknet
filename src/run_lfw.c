@@ -104,6 +104,7 @@ int verify_lfw_images(int argc, char** argv)
         }
         idx = keep_one(dets, n, im1); 
         bbox box1 = dets[idx].bx; landmark landmark1 = dets[idx].mk;
+        landmark1 = substract_bias(landmark1, box1.x1, box1.y1);
 
         // detect im2
         dets = realloc(dets, 0); n = 0;
@@ -116,6 +117,7 @@ int verify_lfw_images(int argc, char** argv)
         }
         idx = keep_one(dets, n, im2); 
         bbox box2 = dets[idx].bx; landmark landmark2 = dets[idx].mk;
+        landmark2 = substract_bias(landmark2, box2.x1, box2.y1);
 
         // ------------------- VERIFICATION ----------------------- //
         image crop1 = crop_image_by_box(im1, box1, H, W);

@@ -47,6 +47,16 @@ image crop_image_by_box(image im, bbox a, int h, int w)
     return resized;
 }
 
+landmark substract_bias(landmark mark, float x, float y)
+{
+    mark.x1 -= x; mark.y1 -= y;
+    mark.x2 -= x; mark.y2 -= y;
+    mark.x3 -= x; mark.y3 -= y;
+    mark.x4 -= x; mark.y4 -= y;
+    mark.x5 -= x; mark.y5 -= y;
+    return mark;
+}
+
 image align_image_with_landmark(image im, landmark src, landmark dst)
 {
     CvPoint2D32f srcPts[5], dstPts[5];
@@ -62,16 +72,16 @@ image align_image_with_landmark(image im, landmark src, landmark dst)
     srcPts[4].x = src.x5;
     srcPts[4].y = src.y5;
     
-    dstPts[0].x = src.x1;
-    dstPts[0].y = src.y1;
-    dstPts[1].x = src.x2;
-    dstPts[1].y = src.y2;
-    dstPts[2].x = src.x3;
-    dstPts[2].y = src.y3;
-    dstPts[3].x = src.x4;
-    dstPts[3].y = src.y4;
-    dstPts[4].x = src.x5;
-    dstPts[4].y = src.y5;
+    dstPts[0].x = dst.x1;
+    dstPts[0].y = dst.y1;
+    dstPts[1].x = dst.x2;
+    dstPts[1].y = dst.y2;
+    dstPts[2].x = dst.x3;
+    dstPts[2].y = dst.y3;
+    dstPts[3].x = dst.x4;
+    dstPts[3].y = dst.y4;
+    dstPts[4].x = dst.x5;
+    dstPts[4].y = dst.y5;
 
     CvMat* warpMat = cvCreateMat(2, 3, CV_32FC1);
     cvGetAffineTransform(srcPts, dstPts, warpMat);
