@@ -152,7 +152,7 @@ int verify_lfw_images(int argc, char** argv)
         free_image(crop1); free_image(crop2);
         free_image(warped1); free_image(warped2);
         
-        sleep(1);
+        // sleep(1);
     }
     
     // ========================= STATISTIC ======================== //
