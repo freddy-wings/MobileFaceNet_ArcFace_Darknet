@@ -144,7 +144,7 @@ int verify_lfw_images(int argc, char** argv)
             }
         }
 
-        fprintf(fp_score, "%.6f\n", cosine);
+        fprintf(fp_score, "%d %.6f\n", i, cosine);
         if (gt != pred) {
             fprintf(fp_bad, "verify error: %d, gt: %d, pred: %d, dist=%3.2f\n", i, gt, pred, cosine);
         }
