@@ -41,7 +41,8 @@ int verify_lfw_images(int argc, char** argv)
 {
     // ======================== INITIALIZE ======================== //
     float thresh = find_float_arg(argc, argv, "--thresh", 0.3);
-    FILE* f = fopen("bad_samples.txt", "w");
+    FILE* fp_bad = fopen("bad_samples.txt", "w");
+    FILE* fp_score = fopen("cosine_score.txt", "w");
     params p = initParams(argc, argv);
     network* pnet = load_mtcnn_net("PNet");
     network* rnet = load_mtcnn_net("RNet");
@@ -98,7 +99,7 @@ int verify_lfw_images(int argc, char** argv)
         detect_image(pnet, rnet, onet, im1, &n, &dets, p);
         if (n == 0){
             bad_samples += 1; 
-            fprintf(f, "detected error: %d\n", i);
+            fprintf(fp_bad, "detected error: %d\n", i);
             printf("Image1 is not detected!\n"); 
             continue;
         }
@@ -111,7 +112,7 @@ int verify_lfw_images(int argc, char** argv)
         detect_image(pnet, rnet, onet, im2, &n, &dets, p);
         if (n == 0){
             bad_samples += 1; 
-            fprintf(f, "detected error: %d\n", i);
+            fprintf(fp_bad, "detected error: %d\n", i);
             printf("Image2 is not detected!\n"); 
             continue;
         }
@@ -143,8 +144,9 @@ int verify_lfw_images(int argc, char** argv)
             }
         }
 
+        fprintf(fp_score, "%.6f\n", cosine);
         if (gt != pred) {
-            fprintf(f, "verify error: %d, gt: %d, pred: %d, dist=%3.2f\n", i, gt, pred, cosine);
+            fprintf(fp_bad, "verify error: %d, gt: %d, pred: %d, dist=%3.2f\n", i, gt, pred, cosine);
         }
         printf("Gt: %d  Pred: %d  Cosine: %3.2f\n", gt, pred, cosine);
 
@@ -167,7 +169,6 @@ int verify_lfw_images(int argc, char** argv)
             total_samples, bad_samples, detected_samples);
     printf("Accuracy: %2.2f | Precision: %2.2f | Recall: %2.2f\n", 
             accuracy, precision, recall);
-    fclose(f);
-
+    fclose(fp_bad); fclose(fp_score);
     return 0;
 }
