@@ -81,17 +81,8 @@ int verify(network* net, image im1, image im2, float* cosine)
     memcpy(feat2 + N, X, N*sizeof(float));
 
     float dist = distCosine(feat1, feat2, N*2);
-    int is_one = -1;  
+    int is_one = dist < *cosine? 0: 1;
 
-    // if (dist < *cosine){
-    //     is_one = 0;
-    // } else {
-    //     is_one = 1;
-    // }
-
-    is_one = logistic_activate(WEIGHT*dist + BIAS) > 0.5? 1: 0;
-    // printf("%.6f, %.6f\n", coef_*dist, logistic_activate(coef_*dist));
-    
     *cosine = dist;
 
     free(feat1); free(feat2);
