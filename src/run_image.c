@@ -17,6 +17,12 @@ int verify_input_images(int argc, char** argv)
     // char* imgpath1 = find_char_arg(argc, argv, "--image1", "images/Aaron_Eckhart_0001.jpg");
     char* imgpath1 = find_char_arg(argc, argv, "--image1", "images/Aaron_Peirsol_0001.jpg");
     char* imgpath2 = find_char_arg(argc, argv, "--image2", "images/Aaron_Peirsol_0002.jpg");
+
+    if (0 == strcmp(imgpath1, "images/Aaron_Peirsol_0001.jpg"))
+        printf("\nUsing default image 1: %s\n", imgpath1);
+    if (0 == strcmp(imgpath2, "images/Aaron_Peirsol_0002.jpg"))
+        printf("Using default image 2: %s\n", imgpath2);
+
     image im1 = load_image_color(imgpath1, 0, 0); 
     // im1 = rotate_image(im1, 0.4);
     image im2 = load_image_color(imgpath2, 0, 0); 
@@ -30,7 +36,7 @@ int verify_input_images(int argc, char** argv)
     detect* dets = calloc(0, sizeof(dets)); int n = 0;
     detect_image(pnet, rnet, onet, im1, &n, &dets, p);
     // show_detect(im1, dets, n, "detect1", 500, 1, 1, 1);
-    if (n == 0){printf("image 1 is not detected!\n"); return -1;}
+    if (n == 0){printf("\nimage 1 is not detected!\n"); return -1;}
     idx = keep_one(dets, n, im1); 
     bbox box1 = dets[idx].bx; landmark landmark1 = dets[idx].mk;
     landmark1 = substract_bias(landmark1, box1.x1, box1.y1);
@@ -39,7 +45,7 @@ int verify_input_images(int argc, char** argv)
     dets = realloc(dets, 0); n = 0;
     detect_image(pnet, rnet, onet, im2, &n, &dets, p);
     // show_detect(im2, dets, n, "detect2", 500, 1, 1, 1);
-    if (n == 0){printf("image 2 is not detected!\n"); return -1;}
+    if (n == 0){printf("\nimage 2 is not detected!\n"); return -1;}
     idx = keep_one(dets, n, im2); 
     bbox box2 = dets[idx].bx; landmark landmark2 = dets[idx].mk;
     landmark2 = substract_bias(landmark2, box2.x1, box2.y1);
@@ -60,7 +66,7 @@ int verify_input_images(int argc, char** argv)
     int is_one = verify(mobilefacenet, crop1, crop2, &cosine);
     printf("OK\n");
 
-    printf("Cosine=%3.2f >>> ", cosine);
+    printf("\nCosine=%3.2f >>> ", cosine);
     if (is_one){
         printf("Same\n");
     } else {

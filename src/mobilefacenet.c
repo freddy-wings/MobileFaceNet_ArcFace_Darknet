@@ -1,6 +1,7 @@
 #include "mobilefacenet.h"
 #include "mtcnn.h"
 #include "parser.h"
+#include "activations.h"
 
 network* load_mobilefacenet()
 {
@@ -81,11 +82,16 @@ int verify(network* net, image im1, image im2, float* cosine)
 
     float dist = distCosine(feat1, feat2, N*2);
     int is_one = -1;  
-    if (dist < *cosine){
-        is_one = 0;
-    } else {
-        is_one = 1;
-    }
+
+    // if (dist < *cosine){
+    //     is_one = 0;
+    // } else {
+    //     is_one = 1;
+    // }
+
+    is_one = logistic_activate(WEIGHT*dist + BIAS) > 0.5? 1: 0;
+    // printf("%.6f, %.6f\n", coef_*dist, logistic_activate(coef_*dist));
+    
     *cosine = dist;
 
     free(feat1); free(feat2);

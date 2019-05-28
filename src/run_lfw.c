@@ -41,12 +41,15 @@ int verify_lfw_images(int argc, char** argv)
 {
     // ======================== INITIALIZE ======================== //
     float thresh = find_float_arg(argc, argv, "--thresh", 0.3);
+
     FILE* fp_bad = fopen("bad_samples.txt", "w");
     FILE* fp_score = fopen("cosine_score.txt", "w");
+
     params p = initParams(argc, argv);
     network* pnet = load_mtcnn_net("PNet");
     network* rnet = load_mtcnn_net("RNet");
     network* onet = load_mtcnn_net("ONet");
+
     landmark aligned = initAligned();
     network* mobilefacenet = load_mobilefacenet();
     printf("\033[2J"); printf("\033[1;1H");
@@ -66,7 +69,7 @@ int verify_lfw_images(int argc, char** argv)
         
         double duration = what_time_is_it_now() - time; 
         elapsed += duration; time = what_time_is_it_now();
-        printf("\033[2J"); printf("\033[1;1H");
+        printf("\033[2;1H"); printf("\033[K"); 
         printf("Pair [%4d]/[%4d] >> Elapsed %6.1fs\n",
                         i+1, total_samples, elapsed);
 
@@ -164,7 +167,7 @@ int verify_lfw_images(int argc, char** argv)
     float accuracy = (float)(tp + tn) / (float)detected_samples;
     float precision = (float)(tp) / (float)(tp + fp);
     float recall = (float)(tp) / (float)(tp + fn);
-    printf("\033[2J"); printf("\033[1;1H");
+    printf("\033[4;1H"); printf("\033[K"); 
     printf("Total: %4d | Bad: %4d | Detected: %4d\n", 
             total_samples, bad_samples, detected_samples);
     printf("Accuracy: %2.2f | Precision: %2.2f | Recall: %2.2f\n", 
