@@ -10,24 +10,6 @@ network* load_mobilefacenet()
     return net;
 }
 
-landmark initAligned()
-{
-    landmark aligned = {0};
-
-    aligned.x1 = 30.2946;
-    aligned.y1 = 51.6963;
-    aligned.x2 = 65.5318;
-    aligned.y2 = 51.5014;
-    aligned.x3 = 48.0252;
-    aligned.y3 = 71.7366;
-    aligned.x4 = 33.5493;
-    aligned.y4 = 92.3655;
-    aligned.x5 = 62.7299;
-    aligned.y5 = 92.2041;
-
-    return aligned;
-}
-
 /*
  * Args:
  *      im: {image} RGB image, range[0, 1]

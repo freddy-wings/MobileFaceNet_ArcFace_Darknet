@@ -10,8 +10,6 @@
 #define W 96
 #define N 128
 
-
-landmark initAligned();
 network* load_mobilefacenet();
 image convert_mobilefacenet_image(image im);
 int verify(network* net, image im1, image im2, float* cosine);
