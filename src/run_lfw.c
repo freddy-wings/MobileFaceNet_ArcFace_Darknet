@@ -188,7 +188,7 @@ int verify_lfw_images(int argc, char** argv)
             accuracy, precision, recall);
 
     fclose(fp_bad); fclose(fp_score);
-    free_list(pairs);
+    free(pairs);
 
     return 0;
 }
