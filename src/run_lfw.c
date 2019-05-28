@@ -103,7 +103,7 @@ int verify_lfw_images(int argc, char** argv)
             sprintf(buff, "%s/%s/%s_%04d.jpg", LFW_ALIGNED_PATH, name2, name2, idx2);
         image im2 = load_image_color(buff, 0, 0);
 
-        show_image(im1, "im1", 10); show_image(im2, "im2", 0);
+        // show_image(im1, "im1", 10); show_image(im2, "im2", 0);
 
         int pred = -1;
         float cosine = thresh;
@@ -142,7 +142,7 @@ int verify_lfw_images(int argc, char** argv)
             image crop2 = crop_image_by_box(im2, box2, H, W);
             image warped1 = align_image_with_landmark(crop1, landmark1, aligned);
             image warped2 = align_image_with_landmark(crop2, landmark2, aligned);
-            show_image(warped1, "warped1", 10); show_image(warped2, "warped2", 0);
+            // show_image(warped1, "warped1", 10); show_image(warped2, "warped2", 0);
 
             pred = verify(mobilefacenet, warped1, warped2, &cosine);// if matched, pred = 1, else 0
             free_image(crop1); free_image(crop2);
