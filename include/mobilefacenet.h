@@ -10,6 +10,13 @@
 #define W 96
 #define N 128
 
+/*
+ * * coefficients for Logistic Regression
+ *      y = sigmoid(WEIGHT * cosion + BIAS)
+ */
+#define WEIGHT 11.7241106
+#define BIAS -3.68407159
+
 landmark initAligned();
 network* load_mobilefacenet();
 image convert_mobilefacenet_image(image im);
