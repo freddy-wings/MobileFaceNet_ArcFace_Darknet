@@ -12,3 +12,4 @@ build/
 mobilefacenet
 
 data/lfw/
+data/lfw-112X96/
