@@ -88,7 +88,8 @@ image align_image_with_landmark(image im, landmark src, landmark dst)
     
     IplImage* srcIpl = image_to_ipl(im);
     IplImage* dstIpl = cvCloneImage(srcIpl);
-    cvWarpAffine(srcIpl, dstIpl, warpMat, CV_INTER_LINEAR+CV_WARP_INVERSE_MAP, cvScalarAll(0));
+    // cvWarpAffine(srcIpl, dstIpl, warpMat, CV_INTER_LINEAR+CV_WARP_INVERSE_MAP, cvScalarAll(0));
+    cvWarpAffine(srcIpl, dstIpl, warpMat, CV_INTER_LINEAR+CV_WARP_FILL_OUTLIERS, cvScalarAll(0));
 
     image warped = ipl_to_image(dstIpl);
     return warped;
