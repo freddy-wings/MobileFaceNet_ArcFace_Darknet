@@ -8,8 +8,7 @@ cmake-build-debug/
 
 pretrained/events*
 
+log/
 build/
 mobilefacenet
-
-data/lfw/
-data/lfw-112X96/
+data/
