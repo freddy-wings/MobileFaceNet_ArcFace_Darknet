@@ -15,6 +15,13 @@ cmake .. && make
 1. Download dataset from [Labeled Faces in the Wild](http://vis-www.cs.umass.edu/lfw/)
 2. Prepare `lfw/`, `veiw2/pairs`, `lfw_112x96`([Align-LFW@BaiduDrive](https://pan.baidu.com/s/1r6BQxzlFza8FM8Z8C_OCBg))
 
+```
+data/
+├── lfw/
+├── lfw_112x96/
+└── pairs.txt
+```
+
 ``` shell
 ./mobilefacenet
 ./mobilefacenet --image1 xxx.jpg --image2 xxx.jpg
@@ -27,6 +34,7 @@ cmake .. && make
 
 ## Prepare data
 Download and `CASIA-WebFace`, extract to `data/`
+
 ``` shell
 cd pretrained/prepare_data/
 ```
@@ -47,11 +55,25 @@ cd pretrained/prepare_data/
     ``` shell
     python label.py
     ```
-    generate file `data/CASIA_label.py`
+    generate file `data/CASIA_label_train.txt` and `data/CASIA_label_valid.txt`
+
+
+```
+data/
+├── CASIA_detect.txt
+├── CASIA_label_train.txt
+├── CASIA_label_valid.txt
+├── CASIA-WebFace/
+├── CASIA-WebFace-Aligned/
+└── CASIA-WebFace-Unaligned/
+```
 
 ## Training
-
-model saved as `pretrained/mobilefacenet.pkl`
+``` shell
+cd pretrained/train/
+python main.py
+```
+model saved as `pretrained/train/ckpt/MobileFacenet_xxxx.pkl`
 
 ## Extract Weights
 ``` shell
@@ -63,7 +85,7 @@ generate `weights/mobilefacenet.weights` and `cfg/mobilefacenet.cfg`.
 ## Details
 1. Input size: (3, 112 ,96);
 2. `Global Depthwise Convolutional Layer` was replaced by `Locally Connected Layer`;
-3. Crop and align see []();
+3. Crop and align: []();
 
 ## Reference
 1. [sirius-ai/MobileFaceNet_TF - Github](https://github.com/sirius-ai/MobileFaceNet_TF)
