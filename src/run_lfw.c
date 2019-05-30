@@ -8,7 +8,7 @@
 #include "crop_align.h"
 
 #define LFW_PATH "data/lfw"
-#define LFW_ALIGNED_PATH "data/lfw-112X96"
+#define LFW_ALIGNED_PATH "data/lfw-112X96"  // download from [Xiaoccer/MobileFaceNet_Pytorch/README.md/Usage/](https://github.com/Xiaoccer/MobileFaceNet_Pytorch)
 
 list* get_lfw_pairs()
 {
