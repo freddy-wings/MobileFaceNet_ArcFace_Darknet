@@ -151,7 +151,7 @@ class Trainer(object):
         self.optimizer = optimizer(params, configer.lrbase)
         self.lr_scheduler = lr_scheduler(self.optimizer, configer.adjstep, configer.gamma)
         self.writer = SummaryWriter(configer.logdir)
-        self.writer.add_graph(self.net, (torch.rand([1] + configer.inputsize), ))
+        # self.writer.add_graph(self.net, (torch.rand([1] + configer.inputsize), ))
         
         ## initialize
         self.valid_loss = float('inf')
@@ -166,11 +166,11 @@ class Trainer(object):
             self.load_checkpoint()
 
         ## print information
-        if len(configer.inputsize) != 3:
-            summary(self.net, configer.inputsize, configer.batchsize, 
-                        device="cuda" if cuda.is_available() else "cpu")
-        else:
-            stat(self.net, configer.inputsize)
+        # if len(configer.inputsize) != 3:
+        #     summary(self.net, configer.inputsize, configer.batchsize, 
+        #                 device="cuda" if cuda.is_available() else "cpu")
+        # else:
+        #     stat(self.net, configer.inputsize)
             
         print("==============================================================================================")
         print("model:           {}".format(self.net._get_name()))
