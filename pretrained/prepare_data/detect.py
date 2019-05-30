@@ -40,6 +40,10 @@ def detect_casia(prefix='../../data/CASIA-WebFace', detected = '../../data/CASIA
     print('\033[2J\033[1;1H')
 
     detector = mtcnn.MtcnnDetector(min_face=24, thresh=[0.8, 0.6, 0.7], scale=0.79, stride=2, cellsize=12)
+    if os.path.exists(detected):
+        print("Already detected!")
+        return
+
     fp = open(detected, 'w')
     
     i = 0; n = 494414
@@ -94,6 +98,10 @@ def detect_lfw(prefix='../../data/lfw', detected = '../../data/lfw_detect.txt'):
     print('\033[2J\033[1;1H')
 
     detector = mtcnn.MtcnnDetector(min_face=12, thresh=[0.8, 0.6, 0.7], scale=0.79, stride=2, cellsize=12)
+    if os.path.exists(detected):
+        print("Already detected!")
+        return
+        
     fp = open(detected, 'w')
     
     i = 0; n = 13233
