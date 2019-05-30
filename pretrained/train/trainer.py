@@ -131,7 +131,8 @@ class Trainer(object):
         self.configer = configer
 
         self.net = net
-        if configer.cuda and cuda.is_available(): self.net.cuda()
+        if configer.cuda and cuda.is_available(): 
+            self.net.cuda()
         
         ## directory for log and checkpoints
         self.logdir = os.path.join(configer.logdir, self.net._get_name())
@@ -231,7 +232,7 @@ class Trainer(object):
 
             self.cur_batch += 1
 
-            X = Variable(X.float()); y = Variable(y.float())
+            X = Variable(X.float()); y = Variable(y.long())
             if self.configer.cuda and cuda.is_available(): X = X.cuda(); y = y.cuda()
             
             y_pred = self.net(X)
@@ -270,7 +271,7 @@ class Trainer(object):
 
         for i_batch, (X, y) in enumerate(self.validloader):
 
-            X = Variable(X.float()); y = Variable(y.float())
+            X = Variable(X.float()); y = Variable(y.long())
             if self.configer.cuda and cuda.is_available(): X = X.cuda(); y = y.cuda()
             
             y_pred = self.net(X)

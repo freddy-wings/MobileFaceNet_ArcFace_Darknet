@@ -1,4 +1,5 @@
 import torch
+from torch import nn
 from torch.optim import SGD
 from torch.optim.lr_scheduler import MultiStepLR
 
@@ -15,8 +16,23 @@ def main():
     assert trainset.n_class == validset.n_class
 
     net = MobileFacenet(trainset.n_class)
-    params = net.parameters()
     criterion = MobileFacenetLoss()
+
+    ignored_params = list(map(id, net.linear1.parameters()))
+    ignored_params += [id(net.weight)]
+    prelu_params = []
+    for m in net.modules():
+        if isinstance(m, nn.PReLU):
+            ignored_params += list(map(id, m.parameters()))
+            prelu_params += m.parameters()
+    base_params = filter(lambda p: id(p) not in ignored_params,
+                         net.parameters())
+    params = [
+        {'params': base_params, 'weight_decay': 4e-5},
+        {'params': net.linear1.parameters(), 'weight_decay': 4e-4},
+        {'params': net.weight, 'weight_decay': 4e-4},
+        {'params': prelu_params, 'weight_decay': 0.0}
+    ]
 
     trainer = Trainer(
         configer,
@@ -24,7 +40,7 @@ def main():
         trainset, validset,
         criterion, 
         SGD, MultiStepLR,
-        num_to_keep=5, resume=False
+        num_to_keep=1, resume=False
     )
     trainer.train()
 
