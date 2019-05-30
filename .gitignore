@@ -12,3 +12,6 @@ log/
 build/
 mobilefacenet
 data/
+
+pretrained/train/ckpt/
+pretrained/train/log/
