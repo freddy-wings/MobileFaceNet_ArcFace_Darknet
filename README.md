@@ -45,11 +45,21 @@ cd pretrained/prepare_data/
     ```
     generate file `data/CASIA_detect.txt`
 
+    ``` shell
+    python detect.py -d lfw
+    ```
+    generate file `data/lfw_detect.txt`
+
 2. crop and aligned
     ``` shell
     python crop.py -d CASIA
     ```
     generate directory `data/CASIA-WebFace-Aligned` and `CASIA-WebFace-Unaligned`
+
+    ``` shell
+    python crop.py -d lfw
+    ```
+    generate directory `data/lfw-Aligned` and `lfw-Unaligned`
 
 3. generate label file
     ``` shell
