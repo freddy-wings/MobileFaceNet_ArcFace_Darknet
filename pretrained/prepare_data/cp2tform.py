@@ -44,14 +44,12 @@ def tformfwd(M, uv):
     Returns:
         ret: {ndarray(n, 2)}
     Notes:
-        ret = [uv, 1] * M
+        ret = [uv, 1] * M^T
     """
     ones = np.ones(shape=(uv.shape[0], 1))  # n x 2
     UV = np.c_[uv, ones]                    # n x 3
-    M = np.c_[M.T, np.array([0, 0, 1])]
-    ret = UV.dot(M)                         # n x 3
-
-    return ret[:, :2]                       # n x 2
+    ret = UV.dot(M.T)                       # n x 2
+    return ret                              # n x 2
 
 def findNonreflectiveSimilarity(uv, xy):
     """
@@ -61,7 +59,7 @@ def findNonreflectiveSimilarity(uv, xy):
     Returns:
         M:  {ndarray(2, 3)}
     Notes:
-        - Xr = U   ===>  r = (X^T X + \lambda I)^{-1} U
+        - Xr = U   ===>  r = (X^T X + \lambda I)^{-1} X^T U
         - r = [r1 r2 r3 r4]^T
         - M
             [r1 -r2 0
@@ -79,7 +77,7 @@ def findNonreflectiveSimilarity(uv, xy):
     M = np.linalg.inv(M)
     return M[:, :2].T
 
-def findSimilarity(uv, xy):
+def findReflectiveSimilarity(uv, xy):
     """
     Params:
         uv: {ndarray(n, 2)}
@@ -115,7 +113,7 @@ def cp2tform(src, dst, mode = 'similarity'):
 
     M = None
     if mode == 'similarity':
-        M = findSimilarity(src, dst)
+        M = findReflectiveSimilarity(src, dst)
     elif mode == 'noreflective':
         M = findNonreflectiveSimilarity(src, dst)
     else:
@@ -148,3 +146,28 @@ def drawCoordinate(im, coord):
         cv2.circle(im, tuple(coord[i]), 1, (255, 255, 255), 3)
     return im
 
+if __name__ == "__main__":
+    src1 = [
+        [30.48, 40.64] ,
+        [66.65, 37.26] ,
+        [55.68, 60.99] ,
+        [37.64, 78.67] ,
+        [67.00, 76.07],
+    ]
+    src2 = [
+        [33.05, 36.37 ],
+        [73.20, 36.19 ],
+        [61.15, 58.91 ],
+        [38.22, 79.78] ,
+        [70.07, 79.63],
+    ]
+
+    dst = [
+        [30.29, 51.70 ],
+        [65.53, 51.50 ],
+        [48.03, 71.74 ],
+        [33.55, 92.37 ],
+        [62.73, 92.20 ],
+    ]
+    cp2tform(np.array(src1), np.array(dst))
+    cp2tform(np.array(src2), np.array(dst))

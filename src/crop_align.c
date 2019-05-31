@@ -175,7 +175,7 @@ image image_crop_aligned(image im, bbox box, landmark srcMk, landmark offset, in
     IplImage* srcIpl = image_to_ipl(croped);
     IplImage* dstIpl = cvCloneImage(srcIpl);
     cvWarpAffine(srcIpl, dstIpl, M, CV_INTER_LINEAR + CV_WARP_FILL_OUTLIERS, cvScalarAll(0));
-    free_image(croped);
+    free_image(croped); cvReleaseMat(&M);
 
     // 返回
     image warped = ipl_to_image(dstIpl);
