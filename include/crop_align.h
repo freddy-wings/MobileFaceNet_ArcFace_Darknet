@@ -1,3 +1,9 @@
+/*
+ * @Author: louishsu
+ * @Date: 2019-05-31 11:30:23 
+ * @Last Modified by:   louishsu 
+ * @Last Modified time: 2019-05-31 11:30:23 
+ */
 #ifndef __CROP_ALIGN_H
 #define __CROP_ALIGN_H
 

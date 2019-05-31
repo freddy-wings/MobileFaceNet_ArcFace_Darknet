@@ -43,8 +43,8 @@ int verify_lfw_images(int argc, char** argv)
     float thresh = find_float_arg(argc, argv, "--thresh", 0.3);
     int align = find_arg(argc, argv, "--aligned");
 
-    FILE* fp_bad = fopen("log/bad_samples.txt", "w");
-    FILE* fp_score = fopen("log/cosine_score.txt", "w");
+    FILE* fp_bad = fopen("bad_samples.txt", "w");
+    FILE* fp_score = fopen("cosine_score.txt", "w");
 
     params p = initParams(argc, argv);
     network* pnet = load_mtcnn_net("PNet");
