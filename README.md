@@ -30,7 +30,7 @@ data/
 ![graph](/images/graph_run=.png)
 
 ## Prepare data
-Download and `CASIA-WebFace`, extract to `data/`
+Download `lfw` and `CASIA-WebFace`, extract to `data/`
 
 ``` shell
 cd pretrained/prepare_data/
@@ -38,7 +38,7 @@ cd pretrained/prepare_data/
 
 1. detect `CASIA-WebFace`
     ``` shell
-    python detect.py -d CASIA
+    python detect.py -d casia
     ```
     generate file `data/CASIA_detect.txt`
 
@@ -49,7 +49,7 @@ cd pretrained/prepare_data/
 
 2. crop and aligned
     ``` shell
-    python crop.py -d CASIA
+    python crop.py -d casia
     ```
     generate directory `data/CASIA-WebFace-Aligned` and `CASIA-WebFace-Unaligned`
 
@@ -91,7 +91,7 @@ generate `weights/mobilefacenet.weights` and `cfg/mobilefacenet.cfg`.
 
 ## Details
 1. Input size: (3, 112 ,96);
-2. `Global Depthwise Convolutional Layer` was replaced by `Locally Connected Layer`;
+2. `Global Depthwise Convolutional Layer` is replaced by `Locally Connected Layer`;
 3. Crop and align: []();
 
 ## Reference
