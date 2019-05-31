@@ -5,6 +5,40 @@
 
 int main(int argc, char** argv)
 {
+    int help = find_arg(argc, argv, "--help");
+    if(help || argc < 2){
+        fprintf(stderr, "Usage:\n");
+        fprintf(stderr, "    ./mobilefacenet <function>\n");
+        fprintf(stderr, "\n");
+        fprintf(stderr, "Optional:\n");
+        fprintf(stderr, "  for MobileFacenet:\n");
+        fprintf(stderr, "    --image1   path of image1  default `images/Aaron_Peirsol_0001.jpg`;\n");
+        fprintf(stderr, "    --image2   path of image2  default `images/Aaron_Peirsol_0002.jpg`;\n");
+        fprintf(stderr, "    --dataset  eval dataset    default `NULL`;\n");
+        fprintf(stderr, "    --aligned  aligned images  default `0`;\n");
+        fprintf(stderr, "\n");
+        fprintf(stderr, "  for MTCNN:\n");
+        fprintf(stderr, "    -v         video mode,     default `0`, image mode;\n");
+        fprintf(stderr, "    --path     file path,      default `../images/test.*`;\n");
+        fprintf(stderr, "    --index    camera index,   default `0`;\n");
+        fprintf(stderr, "    -p         thresh for PNet,default `0.8`;\n");
+        fprintf(stderr, "    -r         thresh for RNet,defalut `0.8`;\n");
+        fprintf(stderr, "    -o         thresh for ONet,defalut `0.8`;\n");
+        fprintf(stderr, "    --minface  minimal face,   default `96.0`;\n");
+        fprintf(stderr, "    --scale    resize factor,  default `0.79`;\n");
+        fprintf(stderr, "    --stride                   default `2`;\n");
+        fprintf(stderr, "    --cellsize                 default `12`;\n");
+        fprintf(stderr, "    --softnms                  default `0`;\n");
+        fprintf(stderr, "\n");
+        fprintf(stderr, "Example:\n");
+        fprintf(stderr, "    ./mtcnn -v 0\n");
+        fprintf(stderr, "    ./mtcnn -v 0 --path [image path]\n");
+        fprintf(stderr, "    ./mtcnn -v 1 --index 0\n");
+        fprintf(stderr, "    ./mtcnn -v 1 --path [video path]\n");
+        fprintf(stderr, "\n");
+        return 0;
+    }
+
     char* dataset = find_char_arg(argc, argv, "--dataset", NULL);
     if (!dataset){
         verify_input_images(argc, argv);
