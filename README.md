@@ -23,10 +23,7 @@ data/
 ```
 
 ``` shell
-./mobilefacenet
-./mobilefacenet --image1 xxx.jpg --image2 xxx.jpg
-./mobilefacenet --datasets lfw --minface 36
-./mobilefacenet --datasets lfw --aligned
+./mobilefacenet --help
 ```
 
 ## Model
