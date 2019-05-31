@@ -6,11 +6,12 @@
 int main(int argc, char** argv)
 {
     int help = find_arg(argc, argv, "--help");
-    if(help || argc < 2){
+    if(help){
         fprintf(stderr, "Usage:\n");
         fprintf(stderr, "    ./mobilefacenet <function>\n");
         fprintf(stderr, "\n");
         fprintf(stderr, "Optional:\n");
+        fprintf(stderr, "\n");
         fprintf(stderr, "  for MobileFacenet:\n");
         fprintf(stderr, "    --image1   path of image1  default `images/Aaron_Peirsol_0001.jpg`;\n");
         fprintf(stderr, "    --image2   path of image2  default `images/Aaron_Peirsol_0002.jpg`;\n");
@@ -31,10 +32,10 @@ int main(int argc, char** argv)
         fprintf(stderr, "    --softnms                  default `0`;\n");
         fprintf(stderr, "\n");
         fprintf(stderr, "Example:\n");
-        fprintf(stderr, "    ./mtcnn -v 0\n");
-        fprintf(stderr, "    ./mtcnn -v 0 --path [image path]\n");
-        fprintf(stderr, "    ./mtcnn -v 1 --index 0\n");
-        fprintf(stderr, "    ./mtcnn -v 1 --path [video path]\n");
+        fprintf(stderr, "    ./mobilefacenet\n");
+        fprintf(stderr, "    ./mobilefacenet --image1 [path1] --image2 [path2]\n");
+        fprintf(stderr, "    ./mobilefacenet --dataset lfw --minface 36\n");
+        fprintf(stderr, "    ./mobilefacenet --dataset lfw  --aligned\n");
         fprintf(stderr, "\n");
         return 0;
     }
