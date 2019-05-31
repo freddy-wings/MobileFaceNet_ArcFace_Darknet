@@ -51,7 +51,7 @@ int verify_lfw_images(int argc, char** argv)
     network* rnet = load_mtcnn_net("RNet");
     network* onet = load_mtcnn_net("ONet");
 
-    landmark aligned = initAligned();
+    landmark alignOffset = initAlignedOffset();
     network* mobilefacenet = load_mobilefacenet();
     printf("\033[2J"); printf("\033[1;1H");
 
@@ -123,7 +123,6 @@ int verify_lfw_images(int argc, char** argv)
             // show_detect(im1, dets, n, "detect1", 0, 1, 1, 1);
             idx = keep_one(dets, n, im1); 
             bbox box1 = dets[idx].bx; landmark landmark1 = dets[idx].mk;
-            landmark1 = substract_bias(landmark1, box1.x1, box1.y1);
 
             // detect im2
             dets = realloc(dets, 0); n = 0;
@@ -137,17 +136,13 @@ int verify_lfw_images(int argc, char** argv)
             // show_detect(im2, dets, n, "detect2", 0, 1, 1, 1);
             idx = keep_one(dets, n, im2); 
             bbox box2 = dets[idx].bx; landmark landmark2 = dets[idx].mk;
-            landmark2 = substract_bias(landmark2, box2.x1, box2.y1);
 
             // ------------------- VERIFICATION ----------------------- //
-            image crop1 = crop_image_by_box(im1, box1, H, W);
-            image crop2 = crop_image_by_box(im2, box2, H, W);
-            image warped1 = align_image_with_landmark(crop1, landmark1, aligned);
-            image warped2 = align_image_with_landmark(crop2, landmark2, aligned);
+            image warped1 = image_crop_aligned(im1, box1, landmark1, alignOffset, H, W);
+            image warped2 = image_crop_aligned(im2, box2, landmark2, alignOffset, H, W);
             // show_image(warped1, "warped1", 10); show_image(warped2, "warped2", 0);
 
             pred = verify(mobilefacenet, warped1, warped2, &cosine);// if matched, pred = 1, else 0
-            free_image(crop1); free_image(crop2);
             free_image(warped1); free_image(warped2);
             free(dets);
         } else {

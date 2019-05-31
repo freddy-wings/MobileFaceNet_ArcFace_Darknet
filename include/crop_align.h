@@ -11,10 +11,11 @@
 #include <opencv/highgui.h>
 #include "darknet.h"
 #include "mtcnn.h"
+#include "cp2form.h"
 
 landmark initAligned();
-image crop_image_by_box(image im, bbox a, int h, int w);
-landmark substract_bias(landmark mark, float x, float y);
-image align_image_with_landmark(image im, landmark src, landmark dst);
+landmark initAlignedOffset();
+image image_crop(image im, bbox box, int h, int w);
+image image_crop_aligned(image im, bbox box, landmark srcMk, landmark offset, int h, int w);
 
 #endif
