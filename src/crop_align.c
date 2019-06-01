@@ -73,6 +73,23 @@ landmark substract_offset(landmark mark, float x, float y)
     return mark;
 }
 
+/*
+ * @params
+ * -    mark: 原图中的坐标
+ * -    x, y: 该关键点所在回归框的左上角坐标
+ * @return
+ *      mark: 在回归框中的坐标
+ */
+landmark multiply_scale(landmark mark, float scale)
+{
+    mark.x1 *= scale; mark.y1 *= scale;
+    mark.x2 *= scale; mark.y2 *= scale;
+    mark.x3 *= scale; mark.y3 *= scale;
+    mark.x4 *= scale; mark.y4 *= scale;
+    mark.x5 *= scale; mark.y5 *= scale;
+    return mark;
+}
+
 CvMat* landmark_to_cvMat(landmark mark)
 {
     CvMat* mat = cvCreateMat(5, 2, CV_32FC1);
@@ -94,7 +111,7 @@ CvMat* landmark_to_cvMat(landmark mark)
  * @notes
  * -    若h == 0, w == 0则不进行resize
  */
-image image_crop(image im, bbox box, int h, int w)
+image image_crop(image im, bbox box, int h, int w, float* scale)
 {
     float cx = (box.x2 + box.x1) / 2;   // centroid
     float cy = (box.y2 + box.y1) / 2;
@@ -140,6 +157,7 @@ image image_crop(image im, bbox box, int h, int w)
         }
     }
 
+    *scale = (float)w / (float)ww_;
     image resized = resize_image(croped, w, h);
     free_image(croped);
     return resized;
@@ -156,14 +174,17 @@ image image_crop(image im, bbox box, int h, int w)
  */
 image image_crop_aligned(image im, bbox box, landmark srcMk, landmark offset, int h, int w, int mode)
 {
+    float scale = -1.;
     // 以回归框将人脸切出
-    image croped = image_crop(im, box, h, w);
+    image croped = image_crop(im, box, h, w, &scale);
     
     // 计算在剪切出的人脸图像中，关键点的坐标
-    float x1 = (box.x1 + box.x2 - croped.w) / 2.;
-    float y1 = (box.y1 + box.y2 - croped.h) / 2.;
-    srcMk = substract_offset(srcMk, x1, y1);
+    float x1 = (box.x1 + box.x2 - croped.w / scale) / 2.;
+    float y1 = (box.y1 + box.y2 - croped.h / scale) / 2.;
+
     landmark dstMk = dstLandmark(offset, croped.h, croped.w);
+    srcMk = substract_offset(srcMk, x1, y1);
+    srcMk = multiply_scale(srcMk, scale);
     
     // 计算变换矩阵
     CvMat* srcPtMat = landmark_to_cvMat(srcMk);
