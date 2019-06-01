@@ -42,6 +42,7 @@ int verify_lfw_images(int argc, char** argv)
     // ======================== INITIALIZE ======================== //
     float thresh = find_float_arg(argc, argv, "--thresh", 0.3);
     int align = find_arg(argc, argv, "--aligned");
+    int mode = find_int_arg(argc, argv, "--mode", 1);
 
     FILE* fp_bad = fopen("bad_samples.txt", "w");
     FILE* fp_score = fopen("cosine_score.txt", "w");
@@ -138,8 +139,8 @@ int verify_lfw_images(int argc, char** argv)
             bbox box2 = dets[idx].bx; landmark landmark2 = dets[idx].mk;
 
             // ------------------- VERIFICATION ----------------------- //
-            image warped1 = image_crop_aligned(im1, box1, landmark1, alignOffset, H, W);
-            image warped2 = image_crop_aligned(im2, box2, landmark2, alignOffset, H, W);
+            image warped1 = image_crop_aligned(im1, box1, landmark1, alignOffset, H, W, mode);
+            image warped2 = image_crop_aligned(im2, box2, landmark2, alignOffset, H, W, mode);
             // show_image(warped1, "warped1", 10); show_image(warped2, "warped2", 0);
 
             pred = verify(mobilefacenet, warped1, warped2, &cosine);// if matched, pred = 1, else 0

@@ -15,6 +15,7 @@ int main(int argc, char** argv)
         fprintf(stderr, "  for MobileFacenet:\n");
         fprintf(stderr, "    --image1   path of image1  default `images/Aaron_Peirsol_0001.jpg`;\n");
         fprintf(stderr, "    --image2   path of image2  default `images/Aaron_Peirsol_0002.jpg`;\n");
+        fprintf(stderr, "    --mode     align mode      default `1`, find similarity;\n");
         fprintf(stderr, "    --dataset  eval dataset    default `NULL`;\n");
         fprintf(stderr, "    --aligned  aligned images  default `0`;\n");
         fprintf(stderr, "\n");

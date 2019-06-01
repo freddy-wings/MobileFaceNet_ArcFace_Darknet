@@ -16,6 +16,6 @@
 landmark initAligned();
 landmark initAlignedOffset();
 image image_crop(image im, bbox box, int h, int w);
-image image_crop_aligned(image im, bbox box, landmark srcMk, landmark offset, int h, int w);
+image image_crop_aligned(image im, bbox box, landmark srcMk, landmark offset, int h, int w, int mode);
 
 #endif

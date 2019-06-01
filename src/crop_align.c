@@ -154,7 +154,7 @@ image image_crop(image im, bbox box, int h, int w)
  *      resized: 切割并矫正后的图像
  * @notes 
  */
-image image_crop_aligned(image im, bbox box, landmark srcMk, landmark offset, int h, int w)
+image image_crop_aligned(image im, bbox box, landmark srcMk, landmark offset, int h, int w, int mode)
 {
     // 以回归框将人脸切出
     image croped = image_crop(im, box, h, w);
@@ -168,7 +168,7 @@ image image_crop_aligned(image im, bbox box, landmark srcMk, landmark offset, in
     // 计算变换矩阵
     CvMat* srcPtMat = landmark_to_cvMat(srcMk);
     CvMat* dstPtMat = landmark_to_cvMat(dstMk);
-    CvMat* M = cp2form(srcPtMat, dstPtMat, 1);
+    CvMat* M = cp2form(srcPtMat, dstPtMat, mode);
     cvReleaseMat(&srcPtMat); cvReleaseMat(&dstPtMat); 
 
     // 用矩阵变换图像
