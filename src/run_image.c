@@ -26,7 +26,7 @@ int verify_input_images(int argc, char** argv)
     image im1 = load_image_color(imgpath1, 0, 0); 
     // im1 = rotate_image(im1, 0.4);
     image im2 = load_image_color(imgpath2, 0, 0); 
-    show_image(im1, "im1", 500); show_image(im2, "im2", 500);
+    show_image(im1, "im1", 1000); show_image(im2, "im2", 1000);
     printf("OK\n");
     
     // ======================== MTCNN STEP ======================== //
@@ -35,7 +35,7 @@ int verify_input_images(int argc, char** argv)
     // detect image1
     detect* dets = calloc(0, sizeof(dets)); int n = 0;
     detect_image(pnet, rnet, onet, im1, &n, &dets, p);
-    // show_detect(im1, dets, n, "detect1", 500, 1, 1, 1);
+    show_detect(im1, dets, n, "detect1", 1000, 1, 1, 1);
     if (n == 0){printf("\nimage 1 is not detected!\n"); return -1;}
     idx = keep_one(dets, n, im1); 
     bbox box1 = dets[idx].bx; landmark landmark1 = dets[idx].mk;
@@ -43,7 +43,7 @@ int verify_input_images(int argc, char** argv)
     // detect image2
     dets = realloc(dets, 0); n = 0;
     detect_image(pnet, rnet, onet, im2, &n, &dets, p);
-    // show_detect(im2, dets, n, "detect2", 500, 1, 1, 1);
+    show_detect(im2, dets, n, "detect2", 1000, 1, 1, 1);
     if (n == 0){printf("\nimage 2 is not detected!\n"); return -1;}
     idx = keep_one(dets, n, im2); 
     bbox box2 = dets[idx].bx; landmark landmark2 = dets[idx].mk;
@@ -53,7 +53,7 @@ int verify_input_images(int argc, char** argv)
     printf("Croping face...");
     image warped1 = image_crop_aligned(im1, box1, landmark1, alignOffset, H, W);
     image warped2 = image_crop_aligned(im2, box2, landmark2, alignOffset, H, W);
-    show_image(warped1, "warped1", 500); show_image(warped2, "warped2", 0);
+    show_image(warped1, "warped1", 1000); show_image(warped2, "warped2", 1000);
     printf("OK\n");
 
     printf("Verifying...");
