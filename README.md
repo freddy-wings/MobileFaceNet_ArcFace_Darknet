@@ -92,7 +92,7 @@ generate `weights/mobilefacenet.weights` and `cfg/mobilefacenet.cfg`.
 ## Details
 1. Input size: (3, 112 ,96);
 2. `Global Depthwise Convolutional Layer` is replaced by `Locally Connected Layer`;
-3. Crop and align: []();
+3. Crop and align: [Face-Detection-MTCNN](https://louishsu.xyz/2019/05/05/Face-Detection-MTCNN/);
 
 ## Results
 
