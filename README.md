@@ -94,6 +94,17 @@ generate `weights/mobilefacenet.weights` and `cfg/mobilefacenet.cfg`.
 2. `Global Depthwise Convolutional Layer` is replaced by `Locally Connected Layer`;
 3. Crop and align: []();
 
+## Results
+
+``` shell
+./mobilefacenet --dataset lfw --minface 36 --thresh 0.3
+python static.py
+```
+
+![statistic_lfw](/images/statistic_lfw.png)
+
+
+
 ## Reference
 1. [sirius-ai/MobileFaceNet_TF - Github](https://github.com/sirius-ai/MobileFaceNet_TF)
 2. [wy1iu/sphereface - Github](https://github.com/wy1iu/sphereface)
