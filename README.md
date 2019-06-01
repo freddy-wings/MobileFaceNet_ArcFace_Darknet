@@ -102,7 +102,13 @@ python static.py
 ```
 
 ![statistic_lfw](/images/statistic_lfw.png)
-
+``` shell
+Reading LFW...OK
+[6000]/[6000] >> Elapsed 3273.3s, FPS 1.99
+Gt: 1  Pred: 1  Cosine: 0.461
+Total: 6000 | Bad:    0 | Detected: 6000
+Accuracy: 0.99 | Precision: 0.99 | Recall: 0.98
+```
 
 
 ## Reference
