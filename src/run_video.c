@@ -87,9 +87,13 @@ void* display_frame_in_thread(void* ptr)
 {
     int c = show_image(g_imFrame[(g_index + 1) % 3], winname, 1);
     if (c != -1) c = c%256;
-    if (c == 27) {
+    if (c == 27) {          // Esc
         g_videoDone = 1;
         return 0;
+    } else if (c == 's') {  // s
+
+    } else if (c == 'v') {  // v
+        
     }
     return 0;
 }

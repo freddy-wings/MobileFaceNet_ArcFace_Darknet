@@ -76,9 +76,9 @@ landmark substract_offset(landmark mark, float x, float y)
 /*
  * @params
  * -    mark: 原图中的坐标
- * -    x, y: 该关键点所在回归框的左上角坐标
+ * -    scale: 缩放比例
  * @return
- *      mark: 在回归框中的坐标
+ *      mark: 在回归框(h, w)中的坐标
  */
 landmark multiply_scale(landmark mark, float scale)
 {
@@ -106,6 +106,7 @@ CvMat* landmark_to_cvMat(landmark mark)
  * -    im:     原图
  * -    box:    回归框
  * -    h, w:   期望得到的图片尺寸
+ * -    scale:  原图(hh, ww)缩放到(h, w)的比例
  * @returns
  *      resized: 切割后的图像
  * @notes
