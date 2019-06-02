@@ -21,6 +21,7 @@ image convert_mobilefacenet_image(image im);
 int verify(network* net, image im1, image im2, float* cosine);
 
 int verify_input_images(int argc, char** argv);
+int verify_video_demo(int argc, char** argv);
 int verify_lfw_images(int argc, char** argv);
 
 #endif

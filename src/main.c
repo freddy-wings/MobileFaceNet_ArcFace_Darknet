@@ -11,6 +11,7 @@ int main(int argc, char** argv)
         fprintf(stderr, "    ./mobilefacenet <function>\n");
         fprintf(stderr, "\n");
         fprintf(stderr, "Optional:\n");
+        fprintf(stderr, "    --video    video mode;\n");
         fprintf(stderr, "\n");
         fprintf(stderr, "  for MobileFacenet:\n");
         fprintf(stderr, "    --image1   path of image1  default `images/Aaron_Peirsol_0001.jpg`;\n");
@@ -37,11 +38,19 @@ int main(int argc, char** argv)
         fprintf(stderr, "    ./mobilefacenet --image1 [path1] --image2 [path2]\n");
         fprintf(stderr, "    ./mobilefacenet --dataset lfw --minface 36\n");
         fprintf(stderr, "    ./mobilefacenet --dataset lfw  --aligned\n");
+        fprintf(stderr, "    ./mobilefacenet --video\n");
         fprintf(stderr, "\n");
         return 0;
     }
 
+    int video = find_arg(argc, argv, "--video");
     char* dataset = find_char_arg(argc, argv, "--dataset", NULL);
+
+    if (video){
+        verify_video_demo(argc, argv);
+        return 0;
+    }
+
     if (!dataset){
         verify_input_images(argc, argv);
     } else if (0 == strcmp(dataset, "lfw")){
