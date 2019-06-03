@@ -20,9 +20,9 @@ def load_net(path):
 
 def main(datapath='../../data/lfw-Aligned', modelpath='../MobileFacenet_best.pkl', thresh=0.3):
     
-    dataset = LFWPairs(datapath=datapath)
+    dataset = LFWPairs(datapath)
     dataloader = DataLoader(dataset)
-    net = load_net('./ckpt/MobileFacenet_{}.pkl')   # TODO
+    net = load_net(modelpath)   # TODO
     if cuda.is_available(): net.cuda()
 
     f = open("../../cosine_score_py.txt", 'w')
