@@ -171,7 +171,7 @@ class Trainer(object):
         #                 device="cuda" if cuda.is_available() else "cpu")
         # else:
         #     stat(self.net, configer.inputsize)
-            
+
         print("==============================================================================================")
         print("model:           {}".format(self.net._get_name()))
         print("logdir:          {}".format(self.logdir))
@@ -313,10 +313,11 @@ class Trainer(object):
                             format(self.net._get_name(), self.save_times))
         torch.save(checkpoint_state, checkpoint_path)
         
-        self.save_times += 1
         checkpoint_path = os.path.join(self.ckptdir, "{}_{:04d}.pkl".\
                             format(self.net._get_name(), self.save_times-self.num_to_keep))
         if os.path.exists(checkpoint_path): os.remove(checkpoint_path)
+
+        self.save_times += 1
 
         # print("checkpoint saved at {}".format(checkpoint_path))
 
