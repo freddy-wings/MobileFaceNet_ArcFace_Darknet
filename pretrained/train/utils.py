@@ -18,3 +18,26 @@ def accuracy(y_pred_prob, y_true):
     y_pred = torch.argmax(y_pred_prob, 1)
     acc = torch.mean((y_pred==y_true).float())
     return acc
+
+def flip(X):
+    """
+    Params:
+        X: {tensor(N, C, H, W)}
+    Returns:
+        Xf: {tensor(N, C, H, W)}
+    """
+    Xf = torch.from_numpy(X.numpy()[:, :, :, ::-1].copy())
+    return Xf
+
+def distCosine(x1, x2):
+    """
+    Params:
+        x1: {tensor(n)}
+        x2: {tensor(n)}
+    Returns:
+        cos: {tensor(1)}
+    """
+    x1n = x1 / torch.norm(x1)
+    x2n = x2 / torch.norm(x2)
+    cos = torch.dot(x1n, x2n)
+    return cos
