@@ -20,9 +20,9 @@ def load_net(path):
 
 def main(thresh=0.3):
     
-    dataset = LFWPairs(datapath='../../data/lfw-112X96')
+    dataset = LFWPairs(datapath='../../data/lfw-Aligned')
     dataloader = DataLoader(dataset)
-    net = load_net('/home/louishsu/Work/Codes/MobileFaceNet_Darknet/pretrained/MobileFacenet_best.pkl')
+    net = load_net('./ckpt/MobileFacenet_{}.pkl')   # TODO
     if cuda.is_available(): net.cuda()
 
     f = open("../../cosine_score_py.txt", 'w')
@@ -58,3 +58,17 @@ def main(thresh=0.3):
 
 if __name__ == "__main__":
     main()
+
+"""
+lfw-Aligned
+../MobileFacenet_best.pkl
+accuracy: 0.8163, precision: 0.7854, recall: 0.8689
+
+lfw-112X96
+../MobileFacenet_best.pkl
+accuracy: 0.9883, precision: 0.9923, recall: 0.9843
+
+lfw-Aligned
+./ckpt/MobileFacenet_{}.pkl
+
+"""
