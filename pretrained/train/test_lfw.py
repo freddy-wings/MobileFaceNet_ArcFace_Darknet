@@ -31,6 +31,12 @@ def main(datapath='../../data/lfw-Aligned', modelpath='../MobileFacenet_best.pkl
     
     net.eval()
     for i, (X1, X2, y_true) in enumerate(dataloader):
+
+        if cuda.is_available():
+            X1 = X1.cuda()
+            X2 = X2.cuda()
+            y_true = y_true.cuda()
+
         feat1 = torch.cat([net.get_feature(X1), net.get_feature(flip(X1))], dim=1).view(-1)
         feat2 = torch.cat([net.get_feature(X2), net.get_feature(flip(X2))], dim=1).view(-1)
         cosine = distCosine(feat1, feat2)

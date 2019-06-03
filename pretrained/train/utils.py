@@ -26,7 +26,8 @@ def flip(X):
     Returns:
         Xf: {tensor(N, C, H, W)}
     """
-    Xf = torch.from_numpy(X.numpy()[:, :, :, ::-1].copy())
+    Xf = torch.from_numpy(X.cpu().numpy()[:, :, :, ::-1].copy())
+    if torch.cuda.is_available(): Xf = Xf.cuda()
     return Xf
 
 def distCosine(x1, x2):
