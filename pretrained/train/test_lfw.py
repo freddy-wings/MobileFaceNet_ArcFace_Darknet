@@ -20,7 +20,7 @@ def load_net(path):
 
 def main(thresh=0.3):
     
-    dataset = LFWPairs()
+    dataset = LFWPairs(datapath='../../data/lfw-112X96')
     dataloader = DataLoader(dataset)
     net = load_net('/home/louishsu/Work/Codes/MobileFaceNet_Darknet/pretrained/MobileFacenet_best.pkl')
     if cuda.is_available(): net.cuda()
@@ -44,9 +44,8 @@ def main(thresh=0.3):
         print('\033[0;0H\033[K')
         print('[{:4d}]/[{:4d}] {:s}'.format(i, len(dataset), line))
 
-    gt = np.array(gt)
-    pd = np.zeros(len(pred))
-    pd[pred > thresh] = 1
+    gt = np.array(gt); pred = np.array(pred)
+    pd = np.zeros(len(pred)); pd[pred > thresh] = 1
 
     gt = gt.reshape(-1); pd = pd.reshape(-1)
     acc = accuracy_score(gt, pd)
