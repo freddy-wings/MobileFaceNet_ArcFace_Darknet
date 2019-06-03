@@ -99,7 +99,16 @@ generate `weights/mobilefacenet.weights` and `cfg/mobilefacenet.cfg`.
 1. Input size: (3, 112 ,96);
 2. `Global Depthwise Convolutional Layer` is replaced by `Locally Connected Layer`;
 3. Crop and align: [Face-Detection-MTCNN](https://louishsu.xyz/2019/05/05/Face-Detection-MTCNN/);
+4. ArcFace Loss
+    $$
+    L_{arc} = - \frac{1}{N} \sum_i \log \frac{e^{s \cos(\theta_{y_i} + m)}}
+        {e^{s \cos(\theta_{y_i} + m)} + \sum_{j \neq y_i} e^{s \cos \theta_j}}
+    $$
 
+    $$
+    \cos \theta_{x_i, c_j} = \frac{w_j^T x_i}{||w_j|| ||x_i||}
+    $$
+    
 ## Results
 
 ``` shell
