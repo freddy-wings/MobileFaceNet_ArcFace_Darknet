@@ -68,19 +68,23 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="verify lfw")
     parser.add_argument('--datapath', '-d', default='../../data/lfw-Aligned')
     parser.add_argument('--modelpath', '-m', default='../MobileFacenet_best.pkl')
-    parser.add_argument('--thresh', '-t', default=0.3)
+    parser.add_argument('--thresh', '-t',  type=float, default=0.3)
     args = parser.parse_args()
 
     main(args.datapath, args.modelpath, args.thresh)
 
 """
-lfw-Aligned
+lfw-112X96(Caffe, base)
+../MobileFacenet_best.pkl
+accuracy: 0.9883, precision: 0.9923, recall: 0.9843
+
+lfw-Aligned(1/3)
 ../MobileFacenet_best.pkl
 accuracy: 0.8163, precision: 0.7854, recall: 0.8689
 
-lfw-112X96
+lfw-Aligned(Caffe)
 ../MobileFacenet_best.pkl
-accuracy: 0.9883, precision: 0.9923, recall: 0.9843
+accuracy: 0.9405, precision: 0.9873, recall: 0.8922
 
 lfw-Aligned
 ./ckpt/MobileFacenet_{}.pkl
