@@ -82,6 +82,12 @@ python main.py
 ```
 model saved as `pretrained/train/ckpt/MobileFacenet_xxxx.pkl`
 
+## Testing
+``` shell
+cd pretrained/train/
+python test_lfw.py
+```
+
 ## Extract Weights
 ``` shell
 cd pretrained/
