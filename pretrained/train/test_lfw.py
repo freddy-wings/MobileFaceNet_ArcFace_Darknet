@@ -74,19 +74,19 @@ if __name__ == "__main__":
     main(args.datapath, args.modelpath, args.thresh)
 
 """
-lfw-112X96(Caffe, base)
+lfw-112X96(align), threhold = 0.3
 ../MobileFacenet_best.pkl
 accuracy: 0.9883, precision: 0.9923, recall: 0.9843
 
-lfw-Aligned(1/3)
+lfw-Aligned(align), threhold = 0.25
+../MobileFacenet_best.pkl
+accuracy: 0.9475, precision: 0.9749, recall: 0.9183
+
+lfw-Aligned(align, 1/3), threhold = 0.3
 ../MobileFacenet_best.pkl
 accuracy: 0.8163, precision: 0.7854, recall: 0.8689
 
-lfw-Aligned(Caffe)
-../MobileFacenet_best.pkl
-accuracy: 0.9405, precision: 0.9873, recall: 0.8922
-
-lfw-Aligned
+lfw-Aligned(align, 1/3)
 ./ckpt/MobileFacenet_{}.pkl
 
 """

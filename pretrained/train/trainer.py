@@ -166,7 +166,7 @@ class Trainer(object):
 
         ## for optimization
         self.criterion = criterion
-        self.optimizer = optimizer(params, configer.lrbase)
+        self.optimizer = optimizer(params, configer.lrbase, momentum=0.9, nesterov=True)
         self.lr_scheduler = lr_scheduler(self.optimizer, configer.adjstep, configer.gamma)
         self.writer = SummaryWriter(configer.logdir)
         # self.writer.add_graph(self.net, (torch.rand([1] + configer.inputsize), ))
@@ -376,6 +376,7 @@ class Trainer(object):
 
 
 
+## TODO
 
 class TrainerCluster(Trainer):
 
