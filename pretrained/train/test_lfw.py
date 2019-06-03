@@ -18,9 +18,9 @@ def load_net(path):
     net.load_state_dict(netstate)
     return net
 
-def main(thresh=0.3):
+def main(datapath='../../data/lfw-Aligned', modelpath='../MobileFacenet_best.pkl', thresh=0.3):
     
-    dataset = LFWPairs(datapath='../../data/lfw-Aligned')
+    dataset = LFWPairs(datapath=datapath)
     dataloader = DataLoader(dataset)
     net = load_net('./ckpt/MobileFacenet_{}.pkl')   # TODO
     if cuda.is_available(): net.cuda()
@@ -57,7 +57,15 @@ def main(thresh=0.3):
     f.close()
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="verify lfw")
+    parser.add_argument('--datapath', '-d', default='../../data/lfw-Aligned')
+    parser.add_argument('--modelpath', '-m', default='../MobileFacenet_best.pkl')
+    parser.add_argument('--thresh', '-t', default=0.3)
+    args = parser.parse_args()
+
+    main(args.datapath, args.modelpath, args.thresh)
 
 """
 lfw-Aligned
