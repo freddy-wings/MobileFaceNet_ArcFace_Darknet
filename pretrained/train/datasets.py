@@ -20,8 +20,10 @@ class CasiaWebFace(Dataset):
         self.fileList = []; self.labelList = []
         for fileLabel in listFileLabel:
             file, label = fileLabel.strip().split(' ')
-            self.fileList += [os.path.join(datapath, file)]
-            self.labelList += [int(label)]
+            filepath = os.path.join(datapath, file)
+            if os.path.exists(filepath):
+                self.fileList += [filepath]
+                self.labelList += [int(label)]
         self.n_class = len(list(set(self.labelList)))
 
     def __getitem__(self, index):
