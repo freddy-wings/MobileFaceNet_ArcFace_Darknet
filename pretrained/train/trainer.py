@@ -310,7 +310,6 @@ class Trainer(object):
         avg_loss = np.mean(np.array(avg_loss))
         return avg_loss
     
-    @classmethod
     def save_checkpoint(self):
         
         checkpoint_state = {
@@ -339,7 +338,6 @@ class Trainer(object):
 
         # print("checkpoint saved at {}".format(checkpoint_path))
 
-    @classmethod
     def load_checkpoint(self, index):
         
         checkpoint_path = os.path.join(self.ckptdir, "{}_{:04d}.pkl".\
@@ -494,7 +492,6 @@ class TrainerCluster(Trainer):
         avg_loss = np.mean(np.array(avg_loss))
         return avg_loss
     
-    @classmethod
     def save_checkpoint(self):
         
         checkpoint_state = {
@@ -523,7 +520,6 @@ class TrainerCluster(Trainer):
 
         # print("checkpoint saved at {}".format(checkpoint_path))
 
-    @classmethod
     def load_checkpoint(self, index):
         
         checkpoint_path = os.path.join(self.ckptdir, "{}_{:04d}.pkl".\
