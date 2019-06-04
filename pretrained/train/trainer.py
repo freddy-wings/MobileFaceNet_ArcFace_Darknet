@@ -162,7 +162,7 @@ class Trainer(object):
         self.trainset = trainset
         self.validset = validset
         self.trainloader = DataLoader(trainset, configer.batchsize, True)
-        self.validloader = DataLoader(validset, configer.batchsize, True)
+        self.validloader = DataLoader(validset, configer.batchsize // 4, True)
 
         ## for optimization
         self.criterion = criterion

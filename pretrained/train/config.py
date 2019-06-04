@@ -6,11 +6,11 @@ configer.ckptdir = './ckpt'
 configer.logdir = './log'
 
 configer.inputsize = (3, 112, 96)    # (C, H, W)
-configer.batchsize = 96
-configer.n_epoch = 40
+configer.batchsize = 256
+configer.n_epoch = 70
 
-configer.lrbase = 0.0004
-configer.adjstep = [30,]
+configer.lrbase = 0.01
+configer.adjstep = [36, 52, 58]
 configer.gamma = 0.1
 
 configer.cuda = True
