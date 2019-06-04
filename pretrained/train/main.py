@@ -11,8 +11,8 @@ from trainer import Trainer
 
 def main():
     
-    trainset = CasiaWebFace(mode='train', datapath='../data/CASIA/CASIA-WebFace-112X96')
-    validset = CasiaWebFace(mode='valid', datapath='../data/CASIA/CASIA-WebFace-112X96')
+    trainset = CasiaWebFace(mode='train', datapath='../../data/CASIA/CASIA-WebFace-112X96')
+    validset = CasiaWebFace(mode='valid', datapath='../../data/CASIA/CASIA-WebFace-112X96')
     assert trainset.n_class == validset.n_class
 
     net = MobileFacenet(trainset.n_class)
