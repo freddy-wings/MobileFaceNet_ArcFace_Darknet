@@ -60,17 +60,51 @@ class MobileFacenetLoss(nn.Module):
 
 
 ## TODO
-class MobileFacenetClusterLoss(nn.Module):
+class MobileFacenetUnsupervisedLoss(nn.Module):
+    """
+    Notes:
+    -   
+    """
+    def __init__(self, num_classes):
 
-    def __init__(self):
-        ...
+        self.m = Parameter(torch.Tensor(num_classes, 128))
+        self.s = Parameter(torch.Tensor(num_classes))
+        nn.init.xavier_uniform_(self.m)
+        nn.init.xavier_uniform_(self.s)
     
-    def forward(self, pred, gt):
+    def f(self, x):
         """
         Params:
-            pred: {tensor(N, n_features(128))}
-            gt:   {tensor(N)}
+            x: {tensor(n_features(128))}
+        Returns:
+            y: {tensor(n_features(128))}
+        """
+        y = torch.exp(- torch.norm(x - self.m, dim=1) / self.s)
+        y = y / torch.sum(y)
+        return y
+
+    def forward(self, x):
+        """
+        Params:
+            x:    {tensor(N, n_features(128))}
         Returns:
             loss: {tensor(1)}
+        Notes:
+        -   p_{ik} = \frac{\exp \left( - \frac{||x_i - m_k||}{\sigma_k} \right)}{\sum_j \exp \left( - \frac{||x_i - m_j||}{\sigma_j} \right)}
+        -   intra_i = \sum_k p_{ik} \log p_{ik}
         """
-        ...
+        ## p_{ik}
+        x = map(lambda x: f(x).unsqueeze(0), x)
+        x = torch.cat(list(x), dim=0)                   # N * n_classes
+
+        ## 类内，属于各类别的概率的熵，越大越好
+        intra = torch.sum(- x * torch.log(x), dim=1)    # N
+        intra = torch.mean(intra)
+
+        ## 类间，类间离差阵的迹，越大越好
+        inter = self.m - torch.mean(self.m, dim=0)      # n_classes * n_features
+        inter = torch.trace(torch.mm(inter.transpose(1, 0), inter) / inter.shape[0])
+
+        ## 优化目标，最小化
+        total = - (intra + inter)
+        return total
