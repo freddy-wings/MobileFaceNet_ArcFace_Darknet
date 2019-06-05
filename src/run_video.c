@@ -1,5 +1,6 @@
 #include "mtcnn.h"
 #include "mobilefacenet.h"
+#include "crop_align.h"
 
 static int g_videoDone = 0;
 static char* winname = "frame";
@@ -19,6 +20,18 @@ static params p;
 static network* pnet;
 static network* rnet;
 static network* onet;
+
+#define THRESH 0.3
+#define N 128
+
+static network* mobilefacenet;
+static landmark g_offset = {0};
+static int g_mode = 0;
+static int g_initialized = 0;
+static float* g_feat_saved = NULL;
+static float* g_feat_toverify = NULL;
+static float g_cosine = 0;
+static int g_isOne = -1;
 
 image _frame()
 {
@@ -47,7 +60,31 @@ void* detect_frame_in_thread(void* ptr)
     g_dets = realloc(g_dets, 0); g_ndets = 0;
     detect_image(pnet, rnet, onet, frame, &g_ndets, &g_dets, p);
 
-    IplImage* iplFrame = image_to_ipl(g_imFrame[(g_index + 2) % 3]);
+    g_running = 0;
+}
+
+void generate_feature(image im, bbox box, landmark mark, float* X)
+{
+    float* x = NULL;
+    image warped = image_crop_aligned(im, box, mark, g_offset, H, W, g_mode);
+    image cvt = convert_mobilefacenet_image(warped);
+    
+    x = network_predict(mobilefacenet, cvt.data);
+    memcpy(X,     x, N*sizeof(float));
+
+    flip_image(cvt);
+    x = network_predict(mobilefacenet, cvt.data);
+    memcpy(X + N, x, N*sizeof(float));
+
+    free_image(warped); free_image(cvt);
+}
+
+void* display_frame_in_thread(void* ptr)
+{
+    while(g_running);
+
+    image im = g_imFrame[(g_index + 1) % 3];
+    IplImage* iplFrame = image_to_ipl(im);
     for (int i = 0; i < g_ndets; i++ ){
         detect det = g_dets[i];
         float score = det.score;
@@ -74,27 +111,42 @@ void* detect_frame_in_thread(void* ptr)
         cvCircle(iplFrame, cvPoint((int)mk.x5, (int)mk.y5),
                     1, cvScalar(255, 255, 255, 0), 1, 8, 0);
     }
-    g_imFrame[(g_index + 2) % 3] = ipl_to_image(iplFrame);
+    im = ipl_to_image(iplFrame);
+    cvReleaseImage(&iplFrame);
+
+    int c = show_image(im, winname, 1);
+
+
+    if (c != -1) c = c%256;
+    if (c == 27) {          // Esc
+        g_videoDone = 1;
+        return 0;
+    } else if (c == 's') {  // save feature
+        im = g_imFrame[(g_index + 1) % 3];
+        int idx = keep_one(g_dets, g_ndets, im);
+        if (idx < 0) return 0;
+        bbox box = g_dets[idx].bx; landmark mark = g_dets[idx].mk;
+        generate_feature(im, box, mark, g_feat_saved);
+        g_initialized = 1;
+    } else if (c == 'v') {  // verify
+        im = g_imFrame[(g_index + 1) % 3];
+        int idx = keep_one(g_dets, g_ndets, im);
+        if (idx < 0) return 0;
+        bbox box = g_dets[idx].bx; landmark mark = g_dets[idx].mk;
+        generate_feature(im, box, mark, g_feat_toverify);
+
+        g_cosine = distCosine(g_feat_saved, g_feat_toverify, N*2);
+        g_isOne = g_cosine < THRESH? 0: 1;
+    }
 
     printf("\033[2J");
     printf("\033[1;1H");
     printf("\nFPS:%.1f\n", g_fps);
     printf("Objects:%d\n", g_ndets);
-    g_running = 0;
-}
+    printf("Initialized:%d\n", g_initialized);
+    printf("Cosine:%.4f\n", g_cosine);
+    printf("Verify:%d\n", g_isOne);
 
-void* display_frame_in_thread(void* ptr)
-{
-    int c = show_image(g_imFrame[(g_index + 1) % 3], winname, 1);
-    if (c != -1) c = c%256;
-    if (c == 27) {          // Esc
-        g_videoDone = 1;
-        return 0;
-    } else if (c == 's') {  // s
-
-    } else if (c == 'v') {  // v
-        
-    }
     return 0;
 }
 
@@ -103,6 +155,7 @@ int verify_video_demo(int argc, char **argv)
     pnet = load_mtcnn_net("PNet");
     rnet = load_mtcnn_net("RNet");
     onet = load_mtcnn_net("ONet");
+    mobilefacenet = load_mobilefacenet();
     printf("\n\n");
 
     printf("Initializing Capture...");
@@ -136,8 +189,16 @@ int verify_video_demo(int argc, char **argv)
     g_dets = calloc(0, sizeof(detect)); g_ndets = 0;
     printf("OK!\n");
 
+    printf("Initializing verification...");
+    g_offset = initAlignedOffset();
+    g_mode = find_int_arg(argc, argv, "--mode", 1);
+    g_feat_saved = calloc(2*N, sizeof(float));
+    g_feat_toverify = calloc(2*N, sizeof(float));
+    printf("OK!\n");
+
     pthread_t thread_read;
     pthread_t thread_detect;
+    pthread_t thread_display;
 
     g_time = what_time_is_it_now();
     while(!g_videoDone){
@@ -145,13 +206,15 @@ int verify_video_demo(int argc, char **argv)
 
         if(pthread_create(&thread_read, 0, read_frame_in_thread, 0)) error("Thread read create failed");
         if(pthread_create(&thread_detect, 0, detect_frame_in_thread, 0)) error("Thread detect create failed");
+        if(pthread_create(&thread_display, 0, display_frame_in_thread, 0)) error("Thread detect create failed");
         
         g_fps = 1./(what_time_is_it_now() - g_time);
         g_time = what_time_is_it_now();
-        display_frame_in_thread(0);
+        // display_frame_in_thread(0);
         
         pthread_join(thread_read, 0);
         pthread_join(thread_detect, 0);
+        pthread_join(thread_display, 0);
     }
     for (int i = 0; i < 3; i++ ){
         free_image(g_imFrame[i]);
@@ -163,7 +226,10 @@ int verify_video_demo(int argc, char **argv)
     free_network(pnet);
     free_network(rnet);
     free_network(onet);
+    free_network(mobilefacenet);
     
+    free(g_feat_saved); free(g_feat_toverify);
+
     return 0;
 }
 
