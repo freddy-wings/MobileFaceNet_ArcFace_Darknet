@@ -144,9 +144,11 @@ class Trainer(object):
     """ Train Templet
     """
 
-    def __init__(self, configer, net, params, trainset, validset, criterion, optimizer, lr_scheduler, num_to_keep=5, resume=False):
+    def __init__(self, configer, net, params, trainset, validset, criterion, 
+                    optimizer, lr_scheduler, num_to_keep=5, resume=False, valid_freq=1):
 
         self.configer = configer
+        self.valid_freq = valid_freq
 
         self.net = net
         if configer.cuda and cuda.is_available(): 
@@ -208,6 +210,7 @@ class Trainer(object):
         print("Start training! current epoch: {}, remain epoch: {}".format(self.cur_epoch, n_epoch))
 
         bar = ProcessBar(n_epoch)
+        loss_train = 0.; loss_valid = 0.
 
         for i_epoch in range(n_epoch):
             
@@ -222,7 +225,8 @@ class Trainer(object):
 
             loss_train = self.train_epoch()
             # print("----------------------------------------------------------------------------------------------")
-            loss_valid = self.valid_epoch()
+            if self.valid_freq != 0 and self.cur_epoch % self.valid_freq == 0:
+                loss_valid = self.valid_epoch()
             # print("----------------------------------------------------------------------------------------------")
 
             self.writer.add_scalars('loss', {'train': loss_train, 'valid': loss_valid}, self.cur_epoch)
@@ -232,9 +236,13 @@ class Trainer(object):
             #             cur_lr, loss_train, loss_valid)
             # print(print_log)
 
-            if loss_valid < self.valid_loss:
-                self.valid_loss = loss_valid
+            if self.valid_freq == 0:
                 self.save_checkpoint()
+            
+            else:
+                if loss_valid < self.valid_loss:
+                    self.valid_loss = loss_valid
+                    self.save_checkpoint()
                 
             # print("==============================================================================================")
 
@@ -378,47 +386,11 @@ class Trainer(object):
 
 class TrainerUnsupervised(Trainer):
 
-    def __init__(self, configer, net, params, trainset, validset, criterion, optimizer, lr_scheduler, num_to_keep=5, resume=False):
+    def __init__(self, configer, net, params, trainset, validset, criterion, 
+                    optimizer, lr_scheduler, num_to_keep=5, resume=False, valid_freq=1):
 
         super(TrainerUnsupervised, self).__init__(configer, net, params, trainset, validset, 
-                        criterion, optimizer, lr_scheduler, num_to_keep, resume)
-
-    def train(self):
-        
-        n_epoch = self.configer.n_epoch - self.cur_epoch
-        print("Start training! current epoch: {}, remain epoch: {}".format(self.cur_epoch, n_epoch))
-
-        bar = ProcessBar(n_epoch)
-
-        for i_epoch in range(n_epoch):
-            
-            if self.configer.cuda and cuda.is_available(): 
-                cuda.empty_cache()
-
-            self.cur_epoch += 1
-            bar.step()
-
-            self.lr_scheduler.step(self.cur_epoch)
-            cur_lr = self.lr_scheduler.get_lr()[-1]
-            self.writer.add_scalar('{}/lr'.format(self.net._get_name()), cur_lr, self.cur_epoch)
-
-            loss_train = self.train_epoch()
-            # print("----------------------------------------------------------------------------------------------")
-            loss_valid = self.valid_epoch()
-            # print("----------------------------------------------------------------------------------------------")
-
-            self.writer.add_scalars('loss', {'train': loss_train, 'valid': loss_valid}, self.cur_epoch)
-
-            # print_log = "{} || Elapsed: {:.4f}h || Epoch: [{:3d}]/[{:3d}] || lr: {:.6f},| train loss: {:4.4f}, valid loss: {:4.4f}".\
-            #         format(getTime(), self.elapsed_time/3600, self.cur_epoch, self.configer.n_epoch, 
-            #             cur_lr, loss_train, loss_valid)
-            # print(print_log)
-
-            if loss_valid < self.valid_loss:
-                self.valid_loss = loss_valid
-                self.save_checkpoint()
-                
-            # print("==============================================================================================")
+                        criterion, optimizer, lr_scheduler, num_to_keep, resume, valid_freq)
 
 
     def train_epoch(self):
@@ -491,51 +463,5 @@ class TrainerUnsupervised(Trainer):
         
         avg_loss = np.mean(np.array(avg_loss))
         return avg_loss
-    
-    def save_checkpoint(self):
         
-        checkpoint_state = {
-            'save_time': getTime(),
-
-            'cur_epoch': self.cur_epoch,
-            'cur_batch': self.cur_batch,
-            'elapsed_time': self.elapsed_time,
-            'valid_loss': self.valid_loss,
-            'save_times': self.save_times,
-            
-            'net': self.net.state_dict(),
-            'optimizer_state': self.optimizer.state_dict(),
-            'lr_scheduler_state': self.lr_scheduler.state_dict(),
-        }
-
-        checkpoint_path = os.path.join(self.ckptdir, "{}_{:04d}.pkl".\
-                            format(self.net._get_name(), self.save_times))
-        torch.save(checkpoint_state, checkpoint_path)
-        
-        checkpoint_path = os.path.join(self.ckptdir, "{}_{:04d}.pkl".\
-                            format(self.net._get_name(), self.save_times-self.num_to_keep))
-        if os.path.exists(checkpoint_path): os.remove(checkpoint_path)
-
-        self.save_times += 1
-
-        # print("checkpoint saved at {}".format(checkpoint_path))
-
-    def load_checkpoint(self, index):
-        
-        checkpoint_path = os.path.join(self.ckptdir, "{}_{:04d}.pkl".\
-                            format(self.net._get_name(), index))
-        checkpoint_state = torch.load(checkpoint_path, map_location='cuda' if cuda.is_available() else 'cpu')
-        
-        self.cur_epoch = checkpoint_state['cur_epoch']
-        self.cur_batch = checkpoint_state['cur_batch']
-        self.elapsed_time = checkpoint_state['elapsed_time']
-        self.valid_loss = checkpoint_state['valid_loss']
-        self.save_times = checkpoint_state['save_times']
-
-        self.net.load_state_dict(checkpoint_state['net'])
-        self.optimizer.load_state_dict(checkpoint_state['optimizer_state'])
-        self.lr_scheduler.load_state_dict(checkpoint_state['lr_scheduler_state'])
-
-        # print("load checkpoint from {}, last save time: {}".\
-        #                         format(checkpoint_path, checkpoint_state['save_time']))
 

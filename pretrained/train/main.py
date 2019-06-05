@@ -46,7 +46,7 @@ def main(datapath):
         trainset, validset,
         criterion, 
         SGD, MultiStepLR,
-        num_to_keep=1, resume=False
+        num_to_keep=1, resume=False, valid_freq=configer.valid_freq
     )
     trainer.train()
 
@@ -83,7 +83,7 @@ def mainUnsupervised(datapath):
         trainset, validset,
         criterion, 
         SGD, MultiStepLR,
-        num_to_keep=1, resume=False
+        num_to_keep=1, resume=False, valid_freq=configer.valid_freq
     )
     trainer.train()
 
