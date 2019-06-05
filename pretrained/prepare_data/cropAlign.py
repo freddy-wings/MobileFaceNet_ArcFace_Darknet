@@ -8,11 +8,17 @@ from cp2tform import cp2tform, warpImage, warpCoordinate
 #             1./3, 2./3,
 #             2./3, 2./3]
 
-ALIGNED = [ 30.2946/96, 51.6963/112,
-            65.5318/96, 51.5014/112,
-            48.0252/96, 71.7366/112,
-            33.5493/96, 92.3655/112,
-            62.7299/96, 92.2041/112]
+# ALIGNED = [ 30.2946/96, 51.6963/112,
+#             65.5318/96, 51.5014/112,
+#             48.0252/96, 71.7366/112,
+#             33.5493/96, 92.3655/112,
+#             62.7299/96, 92.2041/112]
+
+ALIGNED = [ 30.2946, 51.6963,
+            65.5318, 51.5014,
+            48.0252, 71.7366,
+            33.5493, 92.3655,
+            62.7299, 92.2041]
 
 def drawCoordinate(im, coord):
     """
@@ -26,59 +32,27 @@ def drawCoordinate(im, coord):
     for i in range(coord.shape[0]):
         cv2.circle(im, tuple(coord[i]), 1, (255, 255, 255), 3)
     return im
+    
 
-def imageAlignCrop(im, bbox, landmark, dsize=(112, 96), return_unaligned=False):
+def imageAlignCrop(im, landmark, dsize=(112, 96)):
     """
     Params:
         im:         {ndarray(H, W, 3)}
-        bbox:       {ndarray(4/5)}
-        landmark:   {ndarray(10)}
+        landmark:   {ndarray(5, 2)}
         dsize:      {tuple/list(H, W)}
-        return_unaligned:   {bool}
+    Returns:
+        dstImage:   {ndarray(h, w, 3)}
     Notes:
-        - 考虑实际应用，先人脸后再进行矫正
-        - 产生图像会有黑边
+        对齐后裁剪
     """
-    ## 先截取人脸
-    x1, y1, x2, y2 = bbox[:4].astype('int')
-    w = x2 - x1 + 1; h = y2 - y1 + 1
-    ro = h / w; rd = dsize[0] / dsize[1]
-    if ro < rd: ## h为较短边
-        w = int(h / rd)
-        x1 = (x1 + x2 - w) // 2
-        x2 = x1 + w
-    else:       ## w为较短边
-        h = int(w * rd)
-        y1 = (y1 + y2 - h) // 2
-        y2 = y1 + h
-    bbox = np.array([x1, y1, x2, y2])
-    
-    cropedImage = im[y1: y2, x1: x2]
-    ch, cw, cc = cropedImage.shape
-    if ch == 0 or cw == 0:
-        if return_unaligned:
-            return None, None
-        else:
-            return None
-    
-    box = bbox[:4].reshape(-1, 2) - bbox[:2]    ## [[x1, y1], [x2, y2]]
-    src = landmark.reshape(-1, 2) - bbox[:2]    ## [[x1, y1], [x2, y2], ..., [x5, y5]]
-    ## 以图像尺寸计算对齐后的关键点位置
-    dst = (np.array([w, h]*5) * np.array(ALIGNED)).reshape(-1, 2)
-
     ## 变换矩阵
-    M = cp2tform(src, dst)
+    M = cp2tform(landmark, np.array(ALIGNED).reshape(-1, 2))
     ## 用矩阵变换图像
-    warpedImage = warpImage(cropedImage, M)
-    ## 用矩阵变换坐标
-    # x1, y1, x2, y2 = box.reshape(-1)
-    # coord = np.r_[np.array([[x1, y1], [x2, y1], [x1, y2], [x2, y2]]), src]
-    # warpedCoord = warpCoordinate(coord, M)
-
-    ## 缩放
-    warpedImage = cv2.resize(warpedImage, dsize[::-1])
-    if return_unaligned:
-        cropedImage = cv2.resize(cropedImage, dsize[::-1])
-        return warpedImage, cropedImage
-    else:
-        return warpedImage
+    warpedImage = warpImage(im, M)
+    cv2.imshow("a", warpedImage)
+    ## 裁剪固定大小的图片尺寸
+    h, w = dsize
+    dstImage = warpedImage[:h, :w]
+    cv2.imshow("b", dstImage)
+    cv2.waitKey(0)
+    return dstImage

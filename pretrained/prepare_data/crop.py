@@ -14,16 +14,14 @@ def parseCoord(coords):
     box, score, landmark = coords[:4], coords[4], coords[5:]
     return np.array(box), score, np.array(landmark)
 
-def crop_casia(prefix='../../data/CASIA-WebFace', detected='../../data/CASIA_detect.txt', 
-        unaligned='../../data/CASIA-WebFace-Unaligned', aligned='../../data/CASIA-WebFace-Aligned', dsize=(112, 96)):
+def crop_casia(datapath='../../data/CASIA-WebFace', detected='../../data/CASIA_detect.txt', 
+        aligned='../../data/CASIA-WebFace-Aligned', dsize=(112, 96)):
     """
     Notes:
         根据检测出的结果，进行截取，结果保存在文件夹
-        - 未对齐： `../../data/CASIA-WebFace-Unaligned`
         - 已对齐： `../../data/CASIA-WebFace-Aligned`
         目录结构一致
     """
-    if not os.path.exists(unaligned): os.mkdir(unaligned)
     if not os.path.exists(aligned): os.mkdir(aligned)
     
     ## 载入已检测的结果
@@ -40,12 +38,10 @@ def crop_casia(prefix='../../data/CASIA-WebFace', detected='../../data/CASIA_det
     elapsed_time = 0
     start_time = time.time()
 
-    for subdir in os.listdir(prefix):
-        subdirSrc      = os.path.join(prefix, subdir)
-        subdirUnWarped = os.path.join(unaligned, subdir)
-        subdirWarped   = os.path.join(aligned, subdir)
-        if not os.path.exists(subdirUnWarped): os.mkdir(subdirUnWarped)
-        if not os.path.exists(subdirWarped): os.mkdir(subdirWarped)
+    for subdir in os.listdir(datapath):
+        subdirSrc      = os.path.join(datapath, subdir)
+        subdirDst   = os.path.join(aligned, subdir)
+        if not os.path.exists(subdirDst): os.mkdir(subdirDst)
         
         for imidx in os.listdir(subdirSrc):
             key = '/'.join([subdir, imidx])
@@ -63,15 +59,15 @@ def crop_casia(prefix='../../data/CASIA-WebFace', detected='../../data/CASIA_det
             srcImg = cv2.imread(os.path.join(subdirSrc, imidx), cv2.IMREAD_COLOR)
             ## 剪裁
             box, score, landmark = parseCoord(detect[key])
-            warpedImage, unWarpedImage = imageAlignCrop(srcImg, box, landmark, dsize, return_unaligned=True)
+            dstImage = imageAlignCrop(srcImg, landmark.reshape(-1, 2), dsize)
 
             ## 保存结果
-            if (warpedImage is None) or (unWarpedImage is None): continue
-            cv2.imwrite(os.path.join(subdirUnWarped, imidx), unWarpedImage)
-            cv2.imwrite(os.path.join(subdirWarped, imidx), warpedImage)
+            if (dstImage is None) or (dstImage is None): continue
+            cv2.imwrite(os.path.join(subdirDst, imidx), dstImage)
 
-def crop_lfw(prefix='../../data/lfw', detected='../../data/lfw_detect.txt', 
-        unaligned='../../data/lfw-Unaligned', aligned='../../data/lfw-Aligned', dsize=(112, 96)):
+
+def crop_lfw(datapath='../../data/lfw', detected='../../data/lfw_detect.txt', 
+        aligned='../../data/lfw-Aligned', dsize=(112, 96)):
     """
     Notes:
         根据检测出的结果，进行截取，结果保存在文件夹
@@ -79,7 +75,6 @@ def crop_lfw(prefix='../../data/lfw', detected='../../data/lfw_detect.txt',
         - 已对齐： `../../data/lfw-Aligned`
         目录结构一致
     """
-    if not os.path.exists(unaligned): os.mkdir(unaligned)
     if not os.path.exists(aligned): os.mkdir(aligned)
     
     ## 载入已检测的结果
@@ -96,12 +91,10 @@ def crop_lfw(prefix='../../data/lfw', detected='../../data/lfw_detect.txt',
     elapsed_time = 0
     start_time = time.time()
 
-    for subdir in os.listdir(prefix):
-        subdirSrc      = os.path.join(prefix, subdir)
-        subdirUnWarped = os.path.join(unaligned, subdir)
-        subdirWarped   = os.path.join(aligned, subdir)
-        if not os.path.exists(subdirUnWarped): os.mkdir(subdirUnWarped)
-        if not os.path.exists(subdirWarped): os.mkdir(subdirWarped)
+    for subdir in os.listdir(datapath):
+        subdirSrc = os.path.join(datapath, subdir)
+        subdirDst = os.path.join(aligned, subdir)
+        if not os.path.exists(subdirDst): os.mkdir(subdirDst)
         
         for imidx in os.listdir(subdirSrc):
             key = '/'.join([subdir, imidx])
@@ -119,12 +112,11 @@ def crop_lfw(prefix='../../data/lfw', detected='../../data/lfw_detect.txt',
             srcImg = cv2.imread(os.path.join(subdirSrc, imidx), cv2.IMREAD_COLOR)
             ## 剪裁
             box, score, landmark = parseCoord(detect[key])
-            warpedImage, unWarpedImage = imageAlignCrop(srcImg, box, landmark, dsize, return_unaligned=True)
+            dstImg = imageAlignCrop(srcImg, landmark.reshape(-1, 2), dsize)
 
             ## 保存结果
-            if (warpedImage is None) or (unWarpedImage is None): continue
-            cv2.imwrite(os.path.join(subdirUnWarped, imidx), unWarpedImage)
-            cv2.imwrite(os.path.join(subdirWarped, imidx), warpedImage)
+            if (dstImg is None) or (dstImg is None): continue
+            cv2.imwrite(os.path.join(subdirDst, imidx), dstImg)
 
 if __name__ == "__main__":
     import argparse

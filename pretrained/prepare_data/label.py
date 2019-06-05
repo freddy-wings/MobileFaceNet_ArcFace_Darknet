@@ -1,38 +1,26 @@
 import os
 import random
 
-def gen_casia_label(prefix='../../data/CASIA-WebFace-Aligned', 
-                    train = '../../data/CASIA_label_train.txt', valid = '../../data/CASIA_label_valid.txt'):
+def gen_casia_label(datapath='../../data/CASIA-WebFace-Aligned', 
+                    savetxt = '../../data/CASIA_label.txt'):
     """
     Notes:
         结果保存在`../../data/CASIA_label_xxxx.txt`，格式为
         `filepath label`
     """
-    index = sorted(list(set(os.listdir(prefix))))
-    keep = []
-    for i in index:
-        # if len(os.listdir(os.path.join(prefix, i))) > 1:
-        #     keep += [i]
-        keep += [i]
-    
-    index_dict = dict(zip(keep, range(len(keep))))
+    index = sorted(list(set(os.listdir(datapath))))
+    index_dict = dict(zip(index, range(len(index))))
 
-    ft = open(train, 'w'); fv = open(valid, 'w')
+    f = open(savetxt, 'w')
     for k, v in index_dict.items():
-        subdir = os.path.join(prefix, k)
+        subdir = os.path.join(datapath, k)
         filenames = os.listdir(subdir)
 
-        valid = random.choice(filenames)
-        line = '{:s} {:d}\n'.format('/'.join([k, valid]), v)
-        fv.write(line)
-
-        # train = filter(lambda x: x not in valid, filenames)
-        train = filenames
-        for filename in train:
+        for filename in filenames:
             line = '{:s} {:d}\n'.format('/'.join([k, filename]), v)
-            ft.write(line)
+            f.write(line)
 
-    ft.close(); fv.close()
+    f.close(); fv.close()
 
 if __name__ == "__main__":
     import argparse
@@ -41,5 +29,5 @@ if __name__ == "__main__":
     parser.add_argument('--dir', '-d', default='../../data/CASIA-WebFace-Aligned')
     args = parser.parse_args()
 
-    gen_casia_label(prefix=args.dir)
+    gen_casia_label(datapath=args.dir)
     
