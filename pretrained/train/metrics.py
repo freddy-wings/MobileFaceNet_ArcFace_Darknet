@@ -1,7 +1,7 @@
 import math
 import torch
 import torch.nn as nn
-
+from torch.nn import Parameter
 
 class ArcMarginProduct(nn.Module):
 
@@ -65,26 +65,51 @@ class MobileFacenetUnsupervisedLoss(nn.Module):
     Notes:
     -   
     """
-    def __init__(self, num_classes, use_entropy=False):
+    def __init__(self, num_classes, use_entropy=True):
+        super(MobileFacenetUnsupervisedLoss, self).__init__()
 
         self.use_entropy = use_entropy
 
         self.m = Parameter(torch.Tensor(num_classes, 128))
-        self.s = Parameter(torch.Tensor(num_classes))
+        self.s1 = Parameter(torch.ones(num_classes))
         nn.init.xavier_uniform_(self.m)
-        nn.init.xavier_uniform_(self.s)
+
+        if use_entropy:
+            self.s2 = Parameter(torch.ones(num_classes))
     
-    def f(self, x, m, s):
+    def _entropy(self, x):
         """
         Params:
-            x: {tensor(n_features(128))}
+            x: tensor{(n)}
+        """
+        x = torch.where(x<=0, 1e-16*torch.ones_like(x), x)
+        x = torch.sum(- x * torch.log(x))
+        return x
+
+    def _softmax(self, x):
+        """
+        Params:
+            x: {tensor(n)}
+        """
+        x = torch.exp(x - torch.max(x))
+        return x / torch.sum(x)
+
+    def _f(self, x, m, s=None):
+        """
+        Params:
+            x: {tensor(n_features(n))}
+            m: {tensor(n_features(C, n))}
+            s: {tensor(n_features(C))}
         Returns:
             y: {tensor(n_features(128))}
         Notes:
-            f(x) = \exp( - \frac{||x - m_k||}{s_k})
+            p_{ik} = \frac{\exp( - \frac{||x^{(i)} - m_k||^2}{s_k^2})}{\sum_j \exp( - \frac{||x^{(i)} - m_j||^2}{s_j^2})}
         """
-        y = torch.exp(- torch.norm(x - m, dim=1) / s)
-        y = y / torch.sum(y)
+        y = - torch.norm(x - m, dim=1)
+        if s is not None:
+            y = y / s
+        y = y**2
+        y = self._softmax(y)
         return y
 
     def forward(self, x):
@@ -94,23 +119,26 @@ class MobileFacenetUnsupervisedLoss(nn.Module):
         Returns:
             loss: {tensor(1)}
         Notes:
-        -   p_{ik} = \frac{\exp \left( - \frac{||x_i - m_k||}{\sigma_k} \right)}{\sum_j \exp \left( - \frac{||x_i - m_j||}{\sigma_j} \right)}
-        -   ent_i  = - \sum_k p_{ik} \log p_{ik}
+        -   p_{ik} = \frac{\exp( - \frac{||x^{(i)} - m_k||^2}{s_k^2})}{\sum_j \exp( - \frac{||x^{(i)} - m_j||^2}{s_j^2})}
+        -   entropy^{(i)}  = - \sum_k p_{ik} \log p_{ik}
+        -   inter = \frac{1}{N} \sum_i entropy^{(i)}
         """
-        ## 类内，属于各类别的概率的熵，越小越好
-        intra = map(lambda x: f(x, self.m, self.s).unsqueeze(0), x) # [tensor(n_classes), ..., tensor(n_classes)]
-        intra = torch.cat(list(intra), dim=0)                       # P_{N × n_classes} = [p_{ik}]
-        intra = torch.sum(- intra * torch.log(intra), dim=1)        # ent_i = \sum_k p_{ik} \log p_{ik}
-        intra = torch.mean(intra)                                   # ent   = \frac{1}{N} \sum_i ent_i
+        ## 类内，属于各类别的概率的熵，求极小
+        intra = map(lambda x: self._f(x, self.m, self.s1).unsqueeze(0), x) # [tensor(n_classes), ..., tensor(n_classes)]
+        intra = torch.cat(list(intra), dim=0)                                               # P_{N × n_classes} = [p_{ik}]
+        intra = torch.cat(list(map(lambda x: self._entropy(x).unsqueeze(0), intra)), dim=0) # ent_i = \sum_k p_{ik} \log p_{ik}
+        intra = torch.mean(intra)                                                           # ent   = \frac{1}{N} \sum_i ent_i
 
-        if not self.use_entropy:
-            ## 类间，类间离差阵的迹，越大越好
+        ## 类间
+        if self.use_entropy:
+            ## 各类别中心到中心均值，计算为熵，求极大
+            inter = self._f(torch.mean(m, dim=0), m, self.s2)
+            inter = self._entropy(inter)
+        else:
+            ## 类间离差阵的迹，求极大
             inter = self.m - torch.mean(self.m, dim=0)                                      # M_{n_classes × n_features}
             inter = torch.trace(torch.mm(inter.transpose(1, 0), inter) / inter.shape[0])    # \text{Trace} M = \text{trace} \frac{M^T M}{K}
-        else:
-            ## 类间，各类别中心到中心均值，计算为熵，越大越好
-            ...
 
         ## 优化目标，最小化
-        total = intra - inter
+        total = intra / inter
         return total
