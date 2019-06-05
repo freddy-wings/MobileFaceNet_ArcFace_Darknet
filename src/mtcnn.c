@@ -546,7 +546,7 @@ int keep_one(detect* dets, int n, image im)
 {
     if (n == 0) return -1;
 
-    int i = 0; int index = 0;
+    int i = 0; int index = -1;
     int cx = im.w/2; int cy = im.h/2;
     int mindist = 999999.;
     for (i = 0; i < n; i++ ){
