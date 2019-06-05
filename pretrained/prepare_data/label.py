@@ -35,5 +35,11 @@ def gen_casia_label(prefix='../../data/CASIA-WebFace-Aligned',
     ft.close(); fv.close()
 
 if __name__ == "__main__":
-    gen_casia_label()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="detect dataset")
+    parser.add_argument('--dir', '-d', default='../../data/CASIA-WebFace-Aligned')
+    args = parser.parse_args()
+
+    gen_casia_label(prefix=args.dir)
     
