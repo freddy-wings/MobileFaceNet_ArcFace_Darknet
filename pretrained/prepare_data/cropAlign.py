@@ -47,12 +47,12 @@ def imageAlignCrop(im, landmark, dsize=(112, 96)):
     """
     ## 变换矩阵
     M = cp2tform(landmark, np.array(ALIGNED).reshape(-1, 2))
+    
     ## 用矩阵变换图像
     warpedImage = warpImage(im, M)
-    cv2.imshow("a", warpedImage)
+    
     ## 裁剪固定大小的图片尺寸
     h, w = dsize
     dstImage = warpedImage[:h, :w]
-    cv2.imshow("b", dstImage)
-    cv2.waitKey(0)
+    
     return dstImage
