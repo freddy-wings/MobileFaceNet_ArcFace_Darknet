@@ -51,28 +51,35 @@ cd pretrained/prepare_data/
     ``` shell
     python crop.py -d casia
     ```
-    generate directory `data/CASIA-WebFace-Aligned` and `CASIA-WebFace-Unaligned`
+    generate directory `data/CASIA-WebFace-Aligned`
 
     ``` shell
     python crop.py -d lfw
     ```
-    generate directory `data/lfw-Aligned` and `lfw-Unaligned`
+    generate directory `data/lfw-Aligned`
 
 3. generate label file
     ``` shell
-    python label.py
+    python label.py -d casia
     ```
-    generate file `data/CASIA_label_train.txt` and `data/CASIA_label_valid.txt`
+    generate file `data/CASIA_label.txt`
+    ``` shell
+    python label.py -d lfw
+    ```
+    generate file `data/lfw_pairs.txt`
 
 
 ```
 data/
-├── CASIA_detect.txt
-├── CASIA_label_train.txt
-├── CASIA_label_valid.txt
 ├── CASIA-WebFace/
+├── CASIA_detect.txt
 ├── CASIA-WebFace-Aligned/
-└── CASIA-WebFace-Unaligned/
+├── CASIA_label.txt
+├── lfw/
+├── lfw_detect.txt
+├── lfw-Aligned/
+├── pairs.txt               # from `view2/`
+└── lfw_pairs.txt
 ```
 
 ## Training
@@ -99,7 +106,8 @@ generate `weights/mobilefacenet.weights` and `cfg/mobilefacenet.cfg`.
 1. Input size: (3, 112 ,96);
 2. `Global Depthwise Convolutional Layer` is replaced by `Locally Connected Layer`;
 3. Crop and align: [Face-Detection-MTCNN](https://louishsu.xyz/2019/05/05/Face-Detection-MTCNN/);
-4. ArcFace Loss
+4. During training, verify `lfw`
+5. ArcFace Loss
     $$
     L_{arc} = - \frac{1}{N} \sum_i \log \frac{e^{s \cos(\theta_{y_i} + m)}}
         {e^{s \cos(\theta_{y_i} + m)} + \sum_{j \neq y_i} e^{s \cos \theta_j}}
