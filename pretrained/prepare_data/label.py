@@ -11,8 +11,9 @@ def gen_casia_label(prefix='../../data/CASIA-WebFace-Aligned',
     index = sorted(list(set(os.listdir(prefix))))
     keep = []
     for i in index:
-        if len(os.listdir(os.path.join(prefix, i))) > 1:
-            keep += [i]
+        # if len(os.listdir(os.path.join(prefix, i))) > 1:
+        #     keep += [i]
+        keep += [i]
     
     index_dict = dict(zip(keep, range(len(keep))))
 
@@ -25,7 +26,8 @@ def gen_casia_label(prefix='../../data/CASIA-WebFace-Aligned',
         line = '{:s} {:d}\n'.format('/'.join([k, valid]), v)
         fv.write(line)
 
-        train = filter(lambda x: x not in valid, filenames)
+        # train = filter(lambda x: x not in valid, filenames)
+        train = filenames
         for filename in train:
             line = '{:s} {:d}\n'.format('/'.join([k, filename]), v)
             ft.write(line)
