@@ -376,11 +376,11 @@ class Trainer(object):
 
 ## TODO
 
-class TrainerCluster(Trainer):
+class TrainerUnsupervised(Trainer):
 
     def __init__(self, configer, net, params, trainset, validset, criterion, optimizer, lr_scheduler, num_to_keep=5, resume=False):
 
-        super(TrainerCluster, self).__init__(configer, net, params, trainset, validset, 
+        super(TrainerUnsupervised, self).__init__(configer, net, params, trainset, validset, 
                         criterion, optimizer, lr_scheduler, num_to_keep, resume)
 
     def train(self):
@@ -428,15 +428,15 @@ class TrainerCluster(Trainer):
         start_time = time.time()
         n_batch = len(self.trainset) // self.configer.batchsize
 
-        for i_batch, (X, y) in enumerate(self.trainloader):
+        for i_batch, (X, _) in enumerate(self.trainloader):
 
             self.cur_batch += 1
 
-            X = Variable(X.float()); y = Variable(y.long())
-            if self.configer.cuda and cuda.is_available(): X = X.cuda(); y = y.cuda()
+            X = Variable(X.float())
+            if self.configer.cuda and cuda.is_available(): X = X.cuda()
             
             y_pred = self.net(X)
-            loss_i = self.criterion(y_pred, y)
+            loss_i = self.criterion(y_pred)
 
             self.optimizer.zero_grad()
             loss_i.backward()
@@ -469,13 +469,13 @@ class TrainerCluster(Trainer):
         start_time = time.time()
         n_batch = len(self.validset) // self.configer.batchsize
 
-        for i_batch, (X, y) in enumerate(self.validloader):
+        for i_batch, (X, _) in enumerate(self.validloader):
 
-            X = Variable(X.float()); y = Variable(y.long())
-            if self.configer.cuda and cuda.is_available(): X = X.cuda(); y = y.cuda()
+            X = Variable(X.float())
+            if self.configer.cuda and cuda.is_available(): X = X.cuda()
             
             y_pred = self.net(X)
-            loss_i = self.criterion(y_pred, y)
+            loss_i = self.criterion(y_pred)
 
             avg_loss += [loss_i.detach().cpu().numpy()]
             self.writer.add_scalar('{}/valid/loss_i'.format(self.net._get_name()), loss_i, self.cur_epoch*n_batch + i_batch)

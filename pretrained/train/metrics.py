@@ -65,21 +65,25 @@ class MobileFacenetUnsupervisedLoss(nn.Module):
     Notes:
     -   
     """
-    def __init__(self, num_classes):
+    def __init__(self, num_classes, use_entropy=False):
+
+        self.use_entropy = use_entropy
 
         self.m = Parameter(torch.Tensor(num_classes, 128))
         self.s = Parameter(torch.Tensor(num_classes))
         nn.init.xavier_uniform_(self.m)
         nn.init.xavier_uniform_(self.s)
     
-    def f(self, x):
+    def f(self, x, m, s):
         """
         Params:
             x: {tensor(n_features(128))}
         Returns:
             y: {tensor(n_features(128))}
+        Notes:
+            f(x) = \exp( - \frac{||x - m_k||}{s_k})
         """
-        y = torch.exp(- torch.norm(x - self.m, dim=1) / self.s)
+        y = torch.exp(- torch.norm(x - m, dim=1) / s)
         y = y / torch.sum(y)
         return y
 
@@ -91,20 +95,22 @@ class MobileFacenetUnsupervisedLoss(nn.Module):
             loss: {tensor(1)}
         Notes:
         -   p_{ik} = \frac{\exp \left( - \frac{||x_i - m_k||}{\sigma_k} \right)}{\sum_j \exp \left( - \frac{||x_i - m_j||}{\sigma_j} \right)}
-        -   intra_i = \sum_k p_{ik} \log p_{ik}
+        -   ent_i  = - \sum_k p_{ik} \log p_{ik}
         """
-        ## p_{ik}
-        x = map(lambda x: f(x).unsqueeze(0), x)
-        x = torch.cat(list(x), dim=0)                   # N * n_classes
+        ## 类内，属于各类别的概率的熵，越小越好
+        intra = map(lambda x: f(x, self.m, self.s).unsqueeze(0), x) # [tensor(n_classes), ..., tensor(n_classes)]
+        intra = torch.cat(list(intra), dim=0)                       # P_{N × n_classes} = [p_{ik}]
+        intra = torch.sum(- intra * torch.log(intra), dim=1)        # ent_i = \sum_k p_{ik} \log p_{ik}
+        intra = torch.mean(intra)                                   # ent   = \frac{1}{N} \sum_i ent_i
 
-        ## 类内，属于各类别的概率的熵，越大越好
-        intra = torch.sum(- x * torch.log(x), dim=1)    # N
-        intra = torch.mean(intra)
-
-        ## 类间，类间离差阵的迹，越大越好
-        inter = self.m - torch.mean(self.m, dim=0)      # n_classes * n_features
-        inter = torch.trace(torch.mm(inter.transpose(1, 0), inter) / inter.shape[0])
+        if not self.use_entropy:
+            ## 类间，类间离差阵的迹，越大越好
+            inter = self.m - torch.mean(self.m, dim=0)                                      # M_{n_classes × n_features}
+            inter = torch.trace(torch.mm(inter.transpose(1, 0), inter) / inter.shape[0])    # \text{Trace} M = \text{trace} \frac{M^T M}{K}
+        else:
+            ## 类间，各类别中心到中心均值，计算为熵，越大越好
+            ...
 
         ## 优化目标，最小化
-        total = - (intra + inter)
+        total = intra - inter
         return total
