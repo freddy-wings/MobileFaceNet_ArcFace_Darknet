@@ -9,10 +9,16 @@ from metrics import MobileFacenetLoss
 from models import MobileFacenet
 from trainer import Trainer
 
-def main():
+import sys
+sys.path.append('../prepare_data/')
+from label import gen_casia_label
+
+def main(datapath):
+
+    gen_casia_label(prefix=datapath)
     
-    trainset = CasiaWebFace(mode='train', datapath='../../data/CASIA/CASIA-WebFace-112X96')
-    validset = CasiaWebFace(mode='valid', datapath='../../data/CASIA/CASIA-WebFace-112X96')
+    trainset = CasiaWebFace(mode='train', datapath=datapath)
+    validset = CasiaWebFace(mode='valid', datapath=datapath)
     assert trainset.n_class == validset.n_class
 
     net = MobileFacenet(trainset.n_class)
@@ -46,4 +52,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="detect dataset")
+    parser.add_argument('--dir', '-d', default='../../data/CASIA-WebFace-Aligned', 
+            choices=['../../data/CASIA-WebFace-Aligned', '../../data/CASIA/CASIA-WebFace-112X96'])
+    args = parser.parse_args()
+
+    main(datapath=args.dir)
