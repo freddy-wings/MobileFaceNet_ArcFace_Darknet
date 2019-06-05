@@ -20,7 +20,7 @@ def load_net(path):
 
 def main(datapath='../../data/lfw-Aligned', modelpath='../MobileFacenet_best.pkl', thresh=0.3):
     
-    dataset = LFWPairs(datapath)
+    dataset = LFWPairs(datapath=datapath)
     dataloader = DataLoader(dataset)
     net = load_net(modelpath)   # TODO
     if cuda.is_available(): net.cuda()

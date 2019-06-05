@@ -9,21 +9,21 @@ from torchvision.transforms import ToTensor
 
 class CasiaWebFace(Dataset):
 
-    LABEL_TXT = '../../data/CASIA_label_{}.txt'
-
-    def __init__(self, mode='train', datapath='../../data/CASIA-WebFace-Aligned', dsize=None):
+    def __init__(self, labelpath='../../data/CASIA_label.txt', datapath='../../data/CASIA-WebFace-Aligned', dsize=None):
         self.dsize = dsize
 
-        labelpath = self.LABEL_TXT.format(mode)
         with open(labelpath, 'r') as f:
             listFileLabel = f.readlines()
+
         self.fileList = []; self.labelList = []
         for fileLabel in listFileLabel:
             file, label = fileLabel.strip().split(' ')
             filepath = os.path.join(datapath, file)
+
             if os.path.exists(filepath):
                 self.fileList += [filepath]
                 self.labelList += [int(label)]
+                
         self.n_class = len(list(set(self.labelList)))
 
     def __getitem__(self, index):
@@ -50,12 +50,10 @@ class CasiaWebFace(Dataset):
 
 class LFWPairs(Dataset):
 
-    PAIRS_TXT = '../../data/pairs.txt'
-
-    def __init__(self, datapath='../../data/lfw-Aligned', dsize=None):
+    def __init__(self, pairstxt='../../data/lfw_pairs.txt', datapath='../../data/lfw-Aligned', dsize=None):
         self.dsize = dsize
 
-        with open(self.PAIRS_TXT, 'r') as f:
+        with open(pairstxt, 'r') as f:
             pairs = f.readlines()[1:]
 
         self.pairList = []; self.labelList = []
