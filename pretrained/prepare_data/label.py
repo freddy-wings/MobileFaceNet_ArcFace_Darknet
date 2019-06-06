@@ -20,7 +20,7 @@ def gen_casia_label(datapath='../../data/CASIA-WebFace-Aligned',
             line = '{:s} {:d}\n'.format('/'.join([k, filename]), v)
             f.write(line)
 
-    f.close(); fv.close()
+    f.close()
 
 def gen_lfw_pairs(oritxt = '../../data/pairs.txt', datapath='../../data/lfw-Aligned', detected = '../../data/lfw_detect.txt',
                     savetxt = '../../data/lfw_pairs.txt'):
