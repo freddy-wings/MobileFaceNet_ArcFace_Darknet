@@ -5,19 +5,50 @@ import numpy as np
 
 getTime  = lambda: time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
-accuracy = lambda x1, x2: np.mean(x1==x2)
-
-def accuracy(y_pred_prob, y_true):
+def prob2label(y_pred_prob):
     """
     Params:
-        y_pred_prob:{tensor(N, n_classes) or tensor(N, C, n_classes)}
-        y_true:     {tensor(N)}
+        y_pred_prob:{tensor(N, n_classes)
     Returns:
-        acc:        {tensor(1)}
+        y_pred:     {tensor(N)}
     """
-    y_pred = torch.argmax(y_pred_prob, 1)
+    return torch.argmax(y_pred_prob, dim=1)
+
+def accuracy(y_pred, y_true):
+    """
+    Params:
+        y_pred: {tensor(N)}
+        y_true: {tensor(N)}
+    Returns:
+        acc:    {tensor(1)}
+    """
     acc = torch.mean((y_pred==y_true).float())
     return acc
+
+def precision(y_pred, y_true):
+    """
+    Params:
+        y_pred: {tensor(N)}
+        y_true: {tensor(N)}
+    Returns:
+        p:      {tensor(1)}
+    Notes: 
+        precision = \frac{tp}{tp + fp}
+    """
+    
+
+def recall(y_pred, y_true):
+    """
+    Params:
+        y_pred: {tensor(N)}
+        y_true: {tensor(N)}
+    Returns:
+        r:      {tensor(1)}
+    Notes: 
+        recall = \frac{tp}{tp + fn}
+    """
+
+
 
 def flip(X):
     """
@@ -42,3 +73,12 @@ def distCosine(x1, x2):
     x2n = x2 / torch.norm(x2)
     cos = torch.dot(x1n, x2n)
     return cos
+
+def kFold(gt, pred, folds=10, steps=100):
+    """
+    Params:
+        gt:   {ndarray(N)}
+        pred: {ndarray(N)}
+        fold: {int}
+        steps:{int}
+    """

@@ -12,132 +12,7 @@ from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 
 from processbar import ProcessBar
-from utils import getTime
-
-def summary(model, input_size, batch_size=-1, device="cuda"):
-
-    def register_hook(module):
-
-        def hook(module, input, output):
-            class_name = str(module.__class__).split(".")[-1].split("'")[0]
-            module_idx = len(summary)
-
-            m_key = "%s-%i" % (class_name, module_idx + 1)
-            summary[m_key] = OrderedDict()
-            summary[m_key]["input_shape"] = list(input[0].size())
-            summary[m_key]["input_shape"][0] = batch_size
-            if isinstance(output, (list, tuple)):
-                summary[m_key]["output_shape"] = [
-                    [-1] + list(o.size())[1:] for o in output
-                ]
-            else:
-                summary[m_key]["output_shape"] = list(output.size())
-                summary[m_key]["output_shape"][0] = batch_size
-
-            params = 0
-            if hasattr(module, "weight") and hasattr(module.weight, "size"):
-                params += torch.prod(torch.LongTensor(list(module.weight.size())))
-                summary[m_key]["trainable"] = module.weight.requires_grad
-            if hasattr(module, "bias") and hasattr(module.bias, "size"):
-                params += torch.prod(torch.LongTensor(list(module.bias.size())))
-            summary[m_key]["nb_params"] = params
-
-        if (
-            not isinstance(module, nn.Sequential)
-            and not isinstance(module, nn.ModuleList)
-            and not (module == model)
-        ):
-            hooks.append(module.register_forward_hook(hook))
-
-    device = device.lower()
-    assert device in [
-        "cuda",
-        "cpu",
-    ], "Input device is not valid, please specify 'cuda' or 'cpu'"
-
-    if device == "cuda" and torch.cuda.is_available():
-        dtype = torch.cuda.FloatTensor
-    else:
-        dtype = torch.FloatTensor
-
-    # multiple inputs to the network
-    if isinstance(input_size, tuple) or isinstance(input_size, list):
-        input_size = [input_size]
-
-    # batch_size of 2 for batchnorm
-    x = [torch.rand(2, *in_size).type(dtype) for in_size in input_size]
-    # print(type(x[0]))
-
-    # create properties
-    summary = OrderedDict()
-    hooks = []
-
-    # register hook
-    model.apply(register_hook)
-
-    # make a forward pass
-    # print(x.shape)
-    model(*x)
-
-    # remove these hooks
-    for h in hooks:
-        h.remove()
-
-    print("----------------------------------------------------------------")
-    line_new = "{:>20}  {:>25} {:>15}".format("Layer (type)", "Output Shape", "Param #")
-    print(line_new)
-    print("================================================================")
-    total_params = 0
-    total_output = 0
-    trainable_params = 0
-    for layer in summary:
-        # input_shape, output_shape, trainable, nb_params
-        line_new = "{:>20}  {:>25} {:>15}".format(
-            layer,
-            str(summary[layer]["output_shape"]),
-            "{0:,}".format(summary[layer]["nb_params"]),
-        )
-        total_params += summary[layer]["nb_params"]
-        total_output += np.prod(summary[layer]["output_shape"])
-        if "trainable" in summary[layer]:
-            if summary[layer]["trainable"] == True:
-                trainable_params += summary[layer]["nb_params"]
-        print(line_new)
-
-    # assume 4 bytes/number (float on cuda).
-    total_input_size = abs(np.prod(input_size) * batch_size * 4. / (1024 ** 2.))
-    total_output_size = abs(2. * total_output * 4. / (1024 ** 2.))  # x2 for gradients
-    total_params_size = abs(total_params.numpy() * 4. / (1024 ** 2.))
-    total_size = (total_params_size + total_output_size + total_input_size) / 1024
-
-    print("================================================================")
-    print("Total params:                    {0:,}".format(total_params))
-    print("Trainable params:                {0:,}".format(trainable_params))
-    print("Non-trainable params:            {0:,}".format(total_params - trainable_params))
-    print("----------------------------------------------------------------")
-    print("Input size (MB):                 %0.2f" % total_input_size)
-    print("Forward/backward pass size (MB): %0.2f" % total_output_size)
-    print("Params size (MB):                %0.2f" % total_params_size)
-    print("Estimated Total Size (GB):       %0.2f" % total_size)
-    print("----------------------------------------------------------------")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+from utils import getTime, flip, distCosine
 
 
 class Trainer(object):
@@ -151,8 +26,6 @@ class Trainer(object):
         self.valid_freq = valid_freq
 
         self.net = net
-        if configer.cuda and cuda.is_available(): 
-            self.net.cuda()
         
         ## directory for log and checkpoints
         self.logdir = os.path.join(configer.logdir, self.net._get_name())
@@ -185,12 +58,9 @@ class Trainer(object):
         if resume:
             self.load_checkpoint()
 
-        ## print information
-        # if len(configer.inputsize) != 3:
-        #     summary(self.net, configer.inputsize, configer.batchsize, 
-        #                 device="cuda" if cuda.is_available() else "cpu")
-        # else:
-        #     stat(self.net, configer.inputsize)
+        stat(self.net, configer.inputsize)
+        if configer.cuda and cuda.is_available(): 
+            self.net.cuda()
 
         print("==============================================================================================")
         print("model:           {}".format(self.net._get_name()))
@@ -369,99 +239,123 @@ class Trainer(object):
 
 
 
+class MobileFacenetTrainer():
 
-
-
-
-
-
-
-
-
-
-
-
-
-## TODO
-
-class TrainerUnsupervised(Trainer):
-
-    def __init__(self, configer, net, params, trainset, validset, criterion, 
+    def __init__(self, configer, net, params, classifyData, verifyData, criterion,
                     optimizer, lr_scheduler, num_to_keep=5, resume=False, valid_freq=1):
 
-        super(TrainerUnsupervised, self).__init__(configer, net, params, trainset, validset, 
-                        criterion, optimizer, lr_scheduler, num_to_keep, resume, valid_freq)
+        self.configer = configer
+        self.valid_freq = valid_freq
+        self.net = net
+        
+        ## directory for log and checkpoints
+        self.logdir = os.path.join(configer.logdir, self.net._get_name())
+        if not os.path.exists(self.logdir): os.makedirs(self.logdir)
+        self.ckptdir = configer.ckptdir
+        if not os.path.exists(self.ckptdir): os.makedirs(self.ckptdir)
+        
+        ## datasets
+        self.classifyData = classifyData
+        self.verifyData   = verifyData
+        self.classifyLoader = DataLoader(classifyData, configer.batchsize, True)
+        self.verifyLoader   = DataLoader(verifyData,   1, False)
 
+        ## for optimization
+        self.criterion = criterion
+        self.optimizer = optimizer(params, configer.lrbase, momentum=0.9, nesterov=True)
+        self.lr_scheduler = lr_scheduler(self.optimizer, configer.adjstep, configer.gamma)
+        self.writer = SummaryWriter(configer.logdir)
+        
+        ## initialize
+        self.valid_loss = float('inf')
+        self.elapsed_time = 0
+        self.cur_epoch = 0
+        self.cur_batch = 0
+        self.save_times = 0
+        self.num_to_keep = num_to_keep
+        self.thresh = 0
+
+        ## if resume
+        if resume:
+            self.load_checkpoint()
+
+        stat(self.net, configer.inputsize)
+        if configer.cuda and cuda.is_available(): 
+            self.net.cuda()
+
+        print("==============================================================================================")
+        print("model:           {}".format(self.net._get_name()))
+        print("logdir:          {}".format(self.logdir))
+        print("ckptdir:         {}".format(self.ckptdir))
+        print("train samples:   {}k".format(len(trainset)/1000))
+        print("valid samples:   {}k".format(len(validset)/1000))
+        print("batch size:      {}".format(configer.batchsize))
+        print("batch per epoch: {}".format(len(trainset)/configer.batchsize))
+        print("epoch:           [{:4d}]/[{:4d}]".format(self.cur_epoch, configer.n_epoch))
+        print("learing rate:    {}".format(configer.lrbase))
+        print("==============================================================================================")
+
+    def train(self):
+
+        pass
 
     def train_epoch(self):
+
+        pass
+
+    def valid_epoch(self)；
+
+        net.eval(); gt = []; pred = []
+        for i, (X1, X2, y_true) in enumerate(self.verifyLoader):
+
+            if cuda.is_available():
+                X1, X2, y_true = X1.cuda(), X2.cuda(), y_true.cuda()
+
+            feat1 = torch.cat([net.get_feature(X1), net.get_feature(flip(X1))], dim=1).view(-1)
+            feat2 = torch.cat([net.get_feature(X2), net.get_feature(flip(X2))], dim=1).view(-1)
+            cosine = distCosine(feat1, feat2)
+
+            gt += [y_true]; pred += [cosine.detach()]
+
+        gt   = torch.cat(list(map(lambda x: x.unsqueeze(0),   gt)), dim=0)
+        pred = torch.cat(list(map(lambda x: x.unsqueeze(0), pred)), dim=0)
+
+        return acc
+
+    def save_checkpoint(self):
         
-        self.net.train()
-        avg_loss = []
-        start_time = time.time()
-        n_batch = len(self.trainset) // self.configer.batchsize
+        pass
 
-        for i_batch, (X, _) in enumerate(self.trainloader):
-
-            self.cur_batch += 1
-
-            X = Variable(X.float())
-            if self.configer.cuda and cuda.is_available(): X = X.cuda()
-            
-            y_pred = self.net(X)
-            loss_i = self.criterion(y_pred)
-
-            self.optimizer.zero_grad()
-            loss_i.backward()
-            self.optimizer.step()
-
-            avg_loss += [loss_i.detach().cpu().numpy()]
-            self.writer.add_scalar('{}/train/loss_i'.format(self.net._get_name()), loss_i, self.cur_epoch*n_batch + i_batch)
-
-            duration_time = time.time() - start_time
-            start_time = time.time()
-            self.elapsed_time += duration_time
-            total_time = duration_time * self.configer.n_epoch * len(self.trainset) // self.configer.batchsize
-            left_time = total_time - self.elapsed_time
-
-            # print_log = "{} || Elapsed: {:.4f}h | Left: {:.4f}h | FPS: {:4.2f} || Epoch: [{:3d}]/[{:3d}] | Batch: [{:3d}]/[{:3d}] | cur: [{:3d}] || lr: {:.6f}, loss: {:4.4f}".\
-            #     format(getTime(), self.elapsed_time/3600, left_time/3600, self.configer.batchsize / duration_time,
-            #         self.cur_epoch, self.configer.n_epoch, i_batch, n_batch, self.cur_batch,
-            #         self.lr_scheduler.get_lr()[-1], loss_i
-            #     )
-            # print(print_log)
+    def load_checkpoint(self, index):
         
-        avg_loss = np.mean(np.array(avg_loss))
-        return avg_loss
+        pass
 
 
-    def valid_epoch(self):
+
+
+
+class MobileFacenetUnsupervisedTrainer():
+
+    def __init__(self):
+
+        pass
+
+    def train(self):
+
+        pass
+
+    def train_epoch(self):
+
+        pass
+    
+    def valid_epoch(self)；
+
+        pass
+
+    def save_checkpoint(self):
         
-        self.net.eval()
-        avg_loss = []
-        start_time = time.time()
-        n_batch = len(self.validset) // self.configer.batchsize
+        pass
 
-        for i_batch, (X, _) in enumerate(self.validloader):
-
-            X = Variable(X.float())
-            if self.configer.cuda and cuda.is_available(): X = X.cuda()
-            
-            y_pred = self.net(X)
-            loss_i = self.criterion(y_pred)
-
-            avg_loss += [loss_i.detach().cpu().numpy()]
-            self.writer.add_scalar('{}/valid/loss_i'.format(self.net._get_name()), loss_i, self.cur_epoch*n_batch + i_batch)
-
-            duration_time = time.time() - start_time
-            start_time = time.time()
-
-            # print_log = "{} || FPS: {:4.2f} || Epoch: [{:3d}]/[{:3d}] | Batch: [{:3d}]/[{:3d}] || loss: {:4.4f}".\
-            #     format(getTime(), self.configer.batchsize / duration_time,
-            #         self.cur_epoch, self.configer.n_epoch, i_batch, n_batch, loss_i
-            #     )
-            # print(print_log)
+    def load_checkpoint(self, index):
         
-        avg_loss = np.mean(np.array(avg_loss))
-        return avg_loss
-        
-
+        pass
