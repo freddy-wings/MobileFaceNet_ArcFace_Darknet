@@ -356,7 +356,7 @@ class MobileFacenetTrainer():
             avg_loss += [loss_i.detach().cpu().numpy()]
             self.writer.add_scalar('{}/train/loss_i'.format(self.net._get_name()), loss_i, self.cur_epoch*n_batch + i_batch)
 
-        avg_loss = np.mean(np.array(avgloss))
+        avg_loss = np.mean(np.array(avg_loss))
         return avg_loss
 
     def valid_epoch(self):
