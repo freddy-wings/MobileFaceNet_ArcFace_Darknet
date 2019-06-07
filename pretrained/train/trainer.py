@@ -281,7 +281,6 @@ class MobileFacenetTrainer():
         if resume:
             self.load_checkpoint()
 
-        stat(self.net, configer.inputsize)
         if configer.cuda and cuda.is_available(): 
             self.net.cuda()
 
@@ -289,10 +288,10 @@ class MobileFacenetTrainer():
         print("model:           {}".format(self.net._get_name()))
         print("logdir:          {}".format(self.logdir))
         print("ckptdir:         {}".format(self.ckptdir))
-        print("train samples:   {}k".format(len(trainset)/1000))
-        print("valid samples:   {}k".format(len(validset)/1000))
+        print("classify samples:{}k".format(len(classifyData)/1000))
+        print("verify samples:  {}k".format(len(verifyData)/1000))
         print("batch size:      {}".format(configer.batchsize))
-        print("batch per epoch: {}".format(len(trainset)/configer.batchsize))
+        print("batch per epoch: {}".format(len(classifyData)/configer.batchsize))
         print("epoch:           [{:4d}]/[{:4d}]".format(self.cur_epoch, configer.n_epoch))
         print("learing rate:    {}".format(configer.lrbase))
         print("==============================================================================================")
@@ -320,7 +319,8 @@ class MobileFacenetTrainer():
             if self.valid_freq != 0 and self.cur_epoch % self.valid_freq == 0:
                 thresh, acc, f1 = self.valid_epoch()
 
-            self.writer.add_scalar('{}/valid/', {'threshold': thresh, 'accuracy': acc, 'f1score': f1}, self.cur_epoch)
+            self.writer.add_scalars('{}/valid/'.format(self.net._get_name()), 
+                        {'threshold': thresh, 'accuracy': acc, 'f1score': f1}, self.cur_epoch)
 
             if self.valid_freq == 0:
                 self.save_checkpoint()
@@ -338,7 +338,7 @@ class MobileFacenetTrainer():
         self.net.train(); avg_loss = []
         n_batch = len(self.classifyData) // self.configer.batchsize
 
-        for i_batch, (X, y) in enumerate(self.classifyData):
+        for i_batch, (X, y) in enumerate(self.classifyLoader):
 
             self.cur_batch += 1
 
@@ -353,13 +353,13 @@ class MobileFacenetTrainer():
             loss_i.backward()
             self.optimizer.step()
 
-            avg_loss += [loss_i.detach.cpu().numpy()]
+            avg_loss += [loss_i.detach().cpu().numpy()]
             self.writer.add_scalar('{}/train/loss_i'.format(self.net._get_name()), loss_i, self.cur_epoch*n_batch + i_batch)
 
         avg_loss = np.mean(np.array(avgloss))
         return avg_loss
 
-    def valid_epoch(self)；
+    def valid_epoch(self):
 
         self.net.eval(); gt = []; pred = []
         for i, (X1, X2, y_true) in enumerate(self.verifyLoader):
@@ -367,13 +367,13 @@ class MobileFacenetTrainer():
             if cuda.is_available():
                 X1, X2, y_true = X1.cuda(), X2.cuda(), y_true.cuda()
 
-            feat1 = torch.cat([net.get_feature(X1), net.get_feature(flip(X1))], dim=1).view(-1)
-            feat2 = torch.cat([net.get_feature(X2), net.get_feature(flip(X2))], dim=1).view(-1)
+            feat1 = torch.cat([self.net.get_feature(X1), self.net.get_feature(flip(X1))], dim=1).view(-1)
+            feat2 = torch.cat([self.net.get_feature(X2), self.net.get_feature(flip(X2))], dim=1).view(-1)
             cosine = distCosine(feat1, feat2)
 
             gt += [y_true]; pred += [cosine.detach()]
 
-        gt   = torch.cat(list(map(lambda x: x.unsqueeze(0),   gt)), dim=0).cpu().numpy()
+        gt   = torch.cat(list(map(lambda x: x             ,   gt)), dim=0).cpu().numpy()
         pred = torch.cat(list(map(lambda x: x.unsqueeze(0), pred)), dim=0).cpu().numpy()
         thresh, acc, f1 = cvSelectThreshold(pred, gt)
 
@@ -445,7 +445,7 @@ class MobileFacenetUnsupervisedTrainer():
 
         pass
     
-    def valid_epoch(self)；
+    def valid_epoch(self):
 
         pass
 

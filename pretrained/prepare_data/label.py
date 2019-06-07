@@ -44,8 +44,8 @@ def gen_lfw_pairs(oritxt = '../../data/pairs.txt', datapath='../../data/lfw-Alig
         else:
             name1, index1, name2, index2 = p
         
-        path1 = '{:s}/{:s}/{:s}_{:04d}.jpg'.format(datapath, name1, name1, int(index1))
-        path2 = '{:s}/{:s}/{:s}_{:04d}.jpg'.format(datapath, name2, name2, int(index2))
+        path1 = '{:s}/{:s}_{:04d}.jpg'.format(name1, name1, int(index1))
+        path2 = '{:s}/{:s}_{:04d}.jpg'.format(name2, name2, int(index2))
 
         if (path1 in detect_files) and (path2 in detect_files):
             tosave += [pair]
@@ -55,7 +55,7 @@ def gen_lfw_pairs(oritxt = '../../data/pairs.txt', datapath='../../data/lfw-Alig
 
 if __name__ == "__main__":
     import argparse
-
+    gen_lfw_pairs()
     parser = argparse.ArgumentParser(description="detect dataset")
     parser.add_argument('--data', '-d', required=True, choices=['casia', 'lfw'])
     args = parser.parse_args()
