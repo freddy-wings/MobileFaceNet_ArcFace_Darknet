@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 
 from processbar import ProcessBar
-from utils import getTime, flip, distCosine
+from utils import getTime, flip, distCosine, cvSelectThreshold
 
 
 class Trainer(object):
@@ -267,8 +267,10 @@ class MobileFacenetTrainer():
         self.writer = SummaryWriter(configer.logdir)
         
         ## initialize
-        self.valid_loss = float('inf')
-        self.elapsed_time = 0
+        self.threshBest = 0.
+        self.accBest = float('-inf')
+        self.f1Best  = float('-inf')
+        
         self.cur_epoch = 0
         self.cur_batch = 0
         self.save_times = 0
@@ -297,15 +299,69 @@ class MobileFacenetTrainer():
 
     def train(self):
 
-        pass
+        n_epoch = self.configer.n_epoch - self.cur_epoch
+        print("Start training! current epoch: {}, remain epoch: {}".format(self.cur_epoch, n_epoch))
+        
+        bar = ProcessBar(n_epoch)
+
+        for i_epoch in range(n_epoch):
+
+            if self.configer.cuda and cuda.is_available():
+                cuda.empty_cache()
+
+            self.cur_epoch += 1
+            bar.step()        
+
+            self.lr_scheduler.step(self.cur_epoch)
+            cur_lr = self.lr_scheduler.get_lr()[-1]
+            self.writer.add_scalar('{}/lr'.format(self.net._get_name()), cur_lr, self.cur_epoch)
+
+            loss_train = self.train_epoch()
+            if self.valid_freq != 0 and self.cur_epoch % self.valid_freq == 0:
+                thresh, acc, f1 = self.valid_epoch()
+
+            self.writer.add_scalar('{}/valid/', {'threshold': thresh, 'accuracy': acc, 'f1score': f1}, self.cur_epoch)
+
+            if self.valid_freq == 0:
+                self.save_checkpoint()
+            
+            else:
+                if f1 > f1Best:
+                    self.threshBest = thresh
+                    self.accBest = acc
+                    self.f1Best = f1
+                    self.save_checkpoint()
+
 
     def train_epoch(self):
 
-        pass
+        self.net.train(); avg_loss = []
+        n_batch = len(self.classifyData) // self.configer.batchsize
+
+        for i_batch, (X, y) in enumerate(self.classifyData):
+
+            self.cur_batch += 1
+
+            X = Variable(X.float()); y = Variable(y.long())
+            if self.configer.cuda and cuda.is_available():
+                X = X.cuda(); y = y.cuda()
+
+            y_pred = self.net(X)
+            loss_i = self.criterion(y_pred, y)
+
+            self.optimizer.zero_grad()
+            loss_i.backward()
+            self.optimizer.step()
+
+            avg_loss += [loss_i.detach.cpu().numpy()]
+            self.writer.add_scalar('{}/train/loss_i'.format(self.net._get_name()), loss_i, self.cur_epoch*n_batch + i_batch)
+
+        avg_loss = np.mean(np.array(avgloss))
+        return avg_loss
 
     def valid_epoch(self)；
 
-        net.eval(); gt = []; pred = []
+        self.net.eval(); gt = []; pred = []
         for i, (X1, X2, y_true) in enumerate(self.verifyLoader):
 
             if cuda.is_available():
@@ -317,18 +373,59 @@ class MobileFacenetTrainer():
 
             gt += [y_true]; pred += [cosine.detach()]
 
-        gt   = torch.cat(list(map(lambda x: x.unsqueeze(0),   gt)), dim=0)
-        pred = torch.cat(list(map(lambda x: x.unsqueeze(0), pred)), dim=0)
+        gt   = torch.cat(list(map(lambda x: x.unsqueeze(0),   gt)), dim=0).cpu().numpy()
+        pred = torch.cat(list(map(lambda x: x.unsqueeze(0), pred)), dim=0).cpu().numpy()
+        thresh, acc, f1 = cvSelectThreshold(pred, gt)
 
-        return acc
+        return thresh, acc, f1
 
     def save_checkpoint(self):
         
-        pass
+        checkpoint_state = {
+            'save_time': getTime(),
 
+            'cur_epoch': self.cur_epoch,
+            'cur_batch': self.cur_batch,
+            'threshold': self.threshBest,
+            'accuracy':  self.accBest,
+            'f1score':   self.f1Best,
+
+            'save_times': self.save_times,
+
+            'net': self.net.state_dict(),
+            'optimizer_state': self.optimizer.state_dict(),
+            'lr_scheduler_state': self.lr_scheduler.state_dict(),
+        }
+        
+        checkpoint_path = os.path.join(self.ckptdir, "{}_{:04d}.pkl".\
+                            format(self.net._get_name(), self.save_times))
+        torch.save(checkpoint_state, checkpoint_path)
+        
+        checkpoint_path = os.path.join(self.ckptdir, "{}_{:04d}.pkl".\
+                            format(self.net._get_name(), self.save_times-self.num_to_keep))
+        if os.path.exists(checkpoint_path): os.remove(checkpoint_path)
+
+        self.save_times += 1
+        
     def load_checkpoint(self, index):
         
-        pass
+        checkpoint_path = os.path.join(self.ckptdir, "{}_{:04d}.pkl".\
+                            format(self.net._get_name(), index))
+        checkpoint_state = torch.load(checkpoint_path, map_location='cuda' \
+                            if self.configer.cuda and cuda.is_available() else 'cpu')
+        
+        self.cur_epoch = checkpoint_state['cur_epoch']
+        self.cur_batch = checkpoint_state['cur_batch']
+        self.elapsed_time = checkpoint_state['elapsed_time']
+        self.threshBest = checkpoint_state['threshold']
+        self.accBest = checkpoint_state['accuracy']
+        self.f1Best = checkpoint_state['f1score']
+        self.save_times = checkpoint_state['save_times']
+
+        self.net.load_state_dict(checkpoint_state['net'])
+        self.optimizer.load_state_dict(checkpoint_state['optimizer_state'])
+        self.lr_scheduler.load_state_dict(checkpoint_state['lr_scheduler_state'])
+
 
 
 
