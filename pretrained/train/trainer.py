@@ -326,7 +326,8 @@ class MobileFacenetTrainer():
                 self.save_checkpoint()
             
             else:
-                if f1 > self.f1Best:
+                # if f1 > self.f1Best:
+                if acc > self.accBest:
                     self.threshBest = thresh
                     self.accBest = acc
                     self.f1Best = f1
