@@ -171,7 +171,8 @@ class MobileFacenetUnsupervised(nn.Module):
         -> linear1  =    conv1x1 -> bn
     """
     def __init__(self, num_classes, facesize=(112, 96), bottleneck_setting=Mobilefacenet_bottleneck_setting):
-        super(MobileFacenet, self).__init__()
+        super(MobileFacenetUnsupervised, self).__init__()
+        
         self.num_classes = num_classes
         self.h, self.w = facesize
         self.conv1 = ConvBlock(3, 64, 3, 2, 1)
