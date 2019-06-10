@@ -52,7 +52,8 @@ int verify_lfw_images(int argc, char** argv)
     network* rnet = load_mtcnn_net("RNet");
     network* onet = load_mtcnn_net("ONet");
 
-    landmark alignOffset = initAlignedOffset();
+    // landmark alignOffset = initAlignedOffset();
+    landmark alignedCoords = initAligned();
     network* mobilefacenet = load_mobilefacenet();
     printf("\033[2J"); printf("\033[1;1H");
 
@@ -139,8 +140,10 @@ int verify_lfw_images(int argc, char** argv)
             bbox box2 = dets[idx].bx; landmark landmark2 = dets[idx].mk;
 
             // ------------------- VERIFICATION ----------------------- //
-            image warped1 = image_crop_aligned(im1, box1, landmark1, alignOffset, H, W, mode);
-            image warped2 = image_crop_aligned(im2, box2, landmark2, alignOffset, H, W, mode);
+            // image warped1 = image_crop_aligned(im1, box1, landmark1, alignOffset, H, W, mode);
+            // image warped2 = image_crop_aligned(im2, box2, landmark2, alignOffset, H, W, mode);
+            image warped1 = image_aligned_v2(im1, landmark1, alignedCoords, H, W, mode);
+            image warped2 = image_aligned_v2(im2, landmark2, alignedCoords, H, W, mode);
             // show_image(warped1, "warped1", 10); show_image(warped2, "warped2", 0);
 
             pred = verify(mobilefacenet, warped1, warped2, &cosine);// if matched, pred = 1, else 0

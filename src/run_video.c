@@ -25,7 +25,7 @@ static network* onet;
 #define N 128
 
 static network* mobilefacenet;
-static landmark g_offset = {0};
+static landmark g_aligned = {0};
 static int g_mode = 0;
 static int g_initialized = 0;
 static float* g_feat_saved = NULL;
@@ -66,7 +66,8 @@ void* detect_frame_in_thread(void* ptr)
 void generate_feature(image im, bbox box, landmark mark, float* X)
 {
     float* x = NULL;
-    image warped = image_crop_aligned(im, box, mark, g_offset, H, W, g_mode);
+    // image warped = image_crop_aligned(im, box, mark, g_aligned, H, W, g_mode);
+    image warped = image_aligned_v2(im, mark, g_aligned, H, W, g_mode);
     image cvt = convert_mobilefacenet_image(warped);
     
     x = network_predict(mobilefacenet, cvt.data);
@@ -190,7 +191,8 @@ int verify_video_demo(int argc, char **argv)
     printf("OK!\n");
 
     printf("Initializing verification...");
-    g_offset = initAlignedOffset();
+    // g_aligned = initAlignedOffset();
+    g_aligned = initAligned();
     g_mode = find_int_arg(argc, argv, "--mode", 1);
     g_feat_saved = calloc(2*N, sizeof(float));
     g_feat_toverify = calloc(2*N, sizeof(float));

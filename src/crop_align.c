@@ -205,3 +205,23 @@ image image_crop_aligned(image im, bbox box, landmark srcMk, landmark offset, in
     return warped;
 }
 
+image image_aligned_v2(image im, landmark src, landmark dst, int h, int w, int mode)
+{
+    // 计算变换矩阵
+    CvMat* srcPtMat = landmark_to_cvMat(src);
+    CvMat* dstPtMat = landmark_to_cvMat(dst);
+    CvMat* M = cp2form(srcPtMat, dstPtMat, mode);
+    cvReleaseMat(&srcPtMat); cvReleaseMat(&dstPtMat); 
+    // 变换图像
+    IplImage* srcIpl = image_to_ipl(im);
+    IplImage* dstIpl = cvCloneImage(srcIpl);
+    cvWarpAffine(srcIpl, dstIpl, M, CV_INTER_LINEAR + CV_WARP_FILL_OUTLIERS, cvScalarAll(0));
+    // 截取图像
+    cvSetImageROI(dstIpl, cvRect(0, 0, w, h));
+    IplImage* warpedIpl = cvCreateImage(cvSize(w, h), dstIpl->depth, dstIpl->nChannels);
+    cvCopy(dstIpl, warpedIpl, NULL); cvResetImageROI(dstIpl);
+    cvReleaseImage(&srcIpl); cvReleaseImage(&dstIpl); cvReleaseMat(&M);
+
+    image warped = ipl_to_image(warpedIpl);
+    return warped;
+}

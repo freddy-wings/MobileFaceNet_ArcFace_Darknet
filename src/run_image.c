@@ -8,7 +8,8 @@ int verify_input_images(int argc, char** argv)
     network* pnet = load_mtcnn_net("PNet");
     network* rnet = load_mtcnn_net("RNet");
     network* onet = load_mtcnn_net("ONet");
-    landmark alignOffset = initAlignedOffset();
+    // landmark alignOffset = initAlignedOffset();
+    landmark alignedCoords = initAligned();
     network* mobilefacenet = load_mobilefacenet();
     printf("\033[2J"); printf("\033[1;1H");
 
@@ -52,8 +53,10 @@ int verify_input_images(int argc, char** argv)
     // ==================== MOBILEFACENET STEP ==================== //
     printf("Croping face..."); 
     int mode = find_int_arg(argc, argv, "--mode", 1);
-    image warped1 = image_crop_aligned(im1, box1, landmark1, alignOffset, H, W, mode);
-    image warped2 = image_crop_aligned(im2, box2, landmark2, alignOffset, H, W, mode);
+    // image warped1 = image_crop_aligned(im1, box1, landmark1, alignOffset, H, W, mode);
+    // image warped2 = image_crop_aligned(im2, box2, landmark2, alignOffset, H, W, mode);
+    image warped1 = image_aligned_v2(im1, landmark1, alignedCoords, H, W, mode);
+    image warped2 = image_aligned_v2(im2, landmark2, alignedCoords, H, W, mode);
     show_image(warped1, "warped1", 0); show_image(warped2, "warped2", 0);
     printf("OK\n");
 
