@@ -132,7 +132,7 @@ class MobileFacenetUnsupervisedLoss(nn.Module):
         ## 类间
         if self.use_entropy:
             ## 各类别中心到中心均值，计算为熵，求极大
-            inter = self._f(torch.mean(m, dim=0), m, self.s2)
+            inter = self._f(torch.mean(self.m, dim=0), self.m, self.s2)
             inter = self._entropy(inter)
         else:
             ## 类间离差阵的迹，求极大
