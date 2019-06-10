@@ -15,6 +15,7 @@ from label import gen_casia_label
 
 def main(classifypath, verifypath):
 
+    gen_casia_label(classifypath)
     classifyData = CasiaWebFace(datapath=classifypath)
     verifyData = LFWPairs(datapath=verifypath)
 
