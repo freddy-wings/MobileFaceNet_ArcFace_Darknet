@@ -49,6 +49,7 @@ def main(classifypath, verifypath):
 
 def mainUnsupervised(classifypath, verifypath):
 
+    gen_casia_label(classifypath)
     classifyData = CasiaWebFace(datapath=classifypath)
     verifyData = LFWPairs(datapath=verifypath)
 
