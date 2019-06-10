@@ -7,17 +7,16 @@ from config import configer
 from datasets import CasiaWebFace, LFWPairs
 from metrics import MobileFacenetLoss, MobileFacenetUnsupervisedLoss
 from models import MobileFacenet, MobileFacenetUnsupervised
-from trainer import Trainer, MobileFacenetTrainer
+from trainer import Trainer, MobileFacenetTrainer, MobileFacenetUnsupervisedTrainer
 
 import sys
 sys.path.append('../prepare_data/')
 from label import gen_casia_label
 
-def main(datapath):
+def main(classifypath, verifypath):
 
-    # gen_casia_label(datapath=datapath)
-    classifyData = CasiaWebFace(datapath=datapath)
-    verifyData = LFWPairs()
+    classifyData = CasiaWebFace(datapath=classifypath)
+    verifyData = LFWPairs(datapath=verifypath)
 
     net = MobileFacenet(classifyData.n_class)
     criterion = MobileFacenetLoss()
@@ -47,49 +46,49 @@ def main(datapath):
     trainer.train()
 
 
-def mainUnsupervised(datapath):
+def mainUnsupervised(classifypath, verifypath):
 
-    gen_casia_label(datapath=datapath)
+    classifyData = CasiaWebFace(datapath=classifypath)
+    verifyData = LFWPairs(datapath=verifypath)
+
+    net = MobileFacenetUnsupervised(classifyData.n_class)
+    criterion = MobileFacenetUnsupervisedLoss(classifyData.n_class)
+
+    ignored_params = list(map(id, net.linear1.parameters()))
+    ignored_params += list(map(id, criterion.parameters()))
+    prelu_params = []
+    for m in net.modules():
+        if isinstance(m, nn.PReLU):
+            ignored_params += list(map(id, m.parameters()))
+            prelu_params += m.parameters()
+    base_params = filter(lambda p: id(p) not in ignored_params,
+                         net.parameters())
+    params = [
+        {'params': base_params, 'weight_decay': 4e-5},
+        {'params': net.linear1.parameters(), 'weight_decay': 4e-4},
+        {'params': criterion.parameters(), 'weight_decay': 4e-4},
+        {'params': prelu_params, 'weight_decay': 0.0}
+    ]
     
-    # trainset = CasiaWebFace(mode='train', datapath=datapath)
-    # validset = CasiaWebFace(mode='valid', datapath=datapath)
-    # assert trainset.n_class == validset.n_class
-
-    # net = MobileFacenetUnsupervised(trainset.n_class)
-    # criterion = MobileFacenetUnsupervisedLoss()
-
-    # ignored_params = list(map(id, net.linear1.parameters()))
-    # prelu_params = []
-    # for m in net.modules():
-    #     if isinstance(m, nn.PReLU):
-    #         ignored_params += list(map(id, m.parameters()))
-    #         prelu_params += m.parameters()
-    # base_params = filter(lambda p: id(p) not in ignored_params,
-    #                      net.parameters())
-    # params = [
-    #     {'params': base_params, 'weight_decay': 4e-5},
-    #     {'params': net.linear1.parameters(), 'weight_decay': 4e-4},
-    #     {'params': criterion.parameters(), 'weight_decay': 4e-4},
-    #     {'params': prelu_params, 'weight_decay': 0.0}
-    # ]
-
-    # trainer = TrainerUnsupervised(
-    #     configer,
-    #     net, params,
-    #     trainset, validset,
-    #     criterion, 
-    #     SGD, MultiStepLR,
-    #     num_to_keep=1, resume=False, valid_freq=configer.valid_freq
-    # )
-    # trainer.train()
+    trainer = MobileFacenetUnsupervisedTrainer(
+        configer, net, params,
+        classifyData, verifyData, 
+        criterion, 
+        SGD, MultiStepLR
+    )
+    trainer.train()
 
 
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="detect dataset")
-    parser.add_argument('--dir', '-d', default='../../data/CASIA-WebFace-Aligned', 
-            choices=['../../data/CASIA-WebFace-Aligned', '../../data/CASIA/CASIA-WebFace-112X96'])
+    parser.add_argument('--classify', '-c', 
+            choices=['../../data/CASIA-WebFace-Aligned', 
+                     '../../data/CASIA/CASIA-WebFace-112X96'])
+    parser.add_argument('--verify', '-v', 
+            choices=['../../data/lfw-Aligned', 
+                     '../../data/lfw-112X96'])
     parser.add_argument('--unsupervised', '-un', action='store_true')
     args = parser.parse_args()
 

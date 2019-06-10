@@ -50,9 +50,13 @@ class CasiaWebFace(Dataset):
 
 class LFWPairs(Dataset):
 
-    def __init__(self, pairstxt='../../data/lfw_pairs.txt', datapath='../../data/lfw-Aligned', dsize=None):
+    def __init__(self, datapath='../../data/lfw-Aligned', dsize=None):
         self.dsize = dsize
 
+        if datapath == '../../data/lfw-Aligned':
+            pairstxt = '../../data/lfw_pairs.txt'
+        else:
+            pairstxt = '../../data/pairs.txt'
         with open(pairstxt, 'r') as f:
             pairs = f.readlines()[1:]
 
