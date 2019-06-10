@@ -93,6 +93,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not args.unsupervised:
-        main(datapath=args.dir)
+        main(classifypath=args.classify, verifypath=args.verify)
     else:
-        mainUnsupervised(datapath=args.dir)
+        mainUnsupervised(classifypath=args.classify, verifypath=args.verify)
