@@ -587,6 +587,7 @@ class MobileFacenetUnsupervisedTrainer():
 
             'save_times': self.save_times,
 
+            'loss': self.criterion.state_dict(),
             'net': self.net.state_dict(),
             'optimizer_state': self.optimizer.state_dict(),
             'lr_scheduler_state': self.lr_scheduler.state_dict(),
@@ -617,6 +618,7 @@ class MobileFacenetUnsupervisedTrainer():
         self.f1Best = checkpoint_state['f1score']
         self.save_times = checkpoint_state['save_times']
 
+        self.criterion.load_state_dict(checkpoint_state['loss'])
         self.net.load_state_dict(checkpoint_state['net'])
         self.optimizer.load_state_dict(checkpoint_state['optimizer_state'])
         self.lr_scheduler.load_state_dict(checkpoint_state['lr_scheduler_state'])
