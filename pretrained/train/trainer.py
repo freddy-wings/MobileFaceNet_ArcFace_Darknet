@@ -562,8 +562,8 @@ class MobileFacenetUnsupervisedTrainer():
             if cuda.is_available():
                 X1, X2, y_true = X1.cuda(), X2.cuda(), y_true.cuda()
 
-            feat1 = torch.cat([self.net.get_feature(X1), self.net.get_feature(flip(X1))], dim=1).view(-1)
-            feat2 = torch.cat([self.net.get_feature(X2), self.net.get_feature(flip(X2))], dim=1).view(-1)
+            feat1 = torch.cat([self.net(X1), self.net(flip(X1))], dim=1).view(-1)
+            feat2 = torch.cat([self.net(X2), self.net(flip(X2))], dim=1).view(-1)
             cosine = distCosine(feat1, feat2)
 
             gt += [y_true]; pred += [cosine.detach()]
