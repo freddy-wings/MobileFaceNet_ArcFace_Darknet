@@ -10,19 +10,21 @@ from mobilefacenet import MobileFacenet, ConvBlock, Bottleneck
 
 def _read_ckpt(prefix):
 
-    net = MobileFacenet(num_classes=10572)
+    net = MobileFacenet(num_classes=10)
     state = torch.load(prefix, map_location='cpu')
     net_state = state['net']
-    net.load_state_dict(net_state)
+    net_state = {k: v for k, v in net_state.items() if k!='weight'}
+    toload = net.state_dict(); toload.update(net_state)
+    net.load_state_dict(toload)
     
-    logdir = './pretrained/'
-    for f in os.listdir(logdir):
-        if 'events' in f:
-            return net
+    # logdir = './pretrained/'
+    # for f in os.listdir(logdir):
+    #     if 'events' in f:
+    #         return net
 
-    with SummaryWriter(log_dir=logdir, comment='mobilefacenet') as w:
-        dummy_input = torch.rand(2, 3, 112, 96)
-        w.add_graph(net, (dummy_input, ))
+    # with SummaryWriter(log_dir=logdir, comment='mobilefacenet') as w:
+    #     dummy_input = torch.rand(2, 3, 112, 96)
+    #     w.add_graph(net, (dummy_input, ))
 
     return net
 
@@ -92,10 +94,10 @@ def _extract_Bottleneck(fp, module):
 
 
 
-def extract_mobilefacenet_weights(prefix):
+def extract_mobilefacenet_weights(ckpt):
 
-    net = _read_ckpt('./pretrained/MobileFacenet_best.pkl')
-    fp = open(prefix, 'wb')
+    net = _read_ckpt(ckpt)
+    fp = open('../weights/mobilefacenet.weights', 'wb')
 
     header = torch.IntTensor([0,0,0,0])
     header.numpy().tofile(fp)
@@ -218,10 +220,10 @@ def _write_Bottleneck_cfg(fp, module, index):
             _write_prelu_cfg(fp, submodule)
     
 
-def write_mobilefacenet_cfg(prefix):
+def write_mobilefacenet_cfg():
 
     net = _read_ckpt('./pretrained/MobileFacenet_best.pkl')
-    fp = open(prefix, 'w')
+    fp = open('../cfg/mobilefacenet.cfg', 'w')
     index = 0
 
     _write_net_cfg(fp, net)
@@ -254,11 +256,15 @@ def write_mobilefacenet_cfg(prefix):
 
     fp.close()
 
-def main():
-    
-    extract_mobilefacenet_weights('./weights/mobilefacenet.weights')
-    write_mobilefacenet_cfg('./cfg/mobilefacenet.cfg')
-
 if __name__ == "__main__":
+    import argparse
 
-    main()
+    parser = argparse.ArgumentParser(description="extract weights & generate cfg file")
+    parser.add_argument('--pretrained', '-p', required=True, help='pretrained model path')
+    parser.add_argument('--cfgfile', '-cfg', action='store_true', help='generate .cfg file if set True')
+
+    args = parser.parse_args()
+    extract_mobilefacenet_weights(args.pretrained)
+    if args.cfgfile:
+        write_mobilefacenet_cfg()
+    
