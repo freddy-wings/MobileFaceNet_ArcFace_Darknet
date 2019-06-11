@@ -564,9 +564,11 @@ class MobileFacenetUnsupervisedTrainer():
 
             feat1 = torch.cat([self.net(X1), self.net(flip(X1))], dim=1).view(-1)
             feat2 = torch.cat([self.net(X2), self.net(flip(X2))], dim=1).view(-1)
-            cosine = distCosine(feat1, feat2)
+            # cosine = distCosine(feat1, feat2)
 
-            gt += [y_true]; pred += [cosine.detach()]
+            dist = torch.exp(- torch.norm(feat1 - feat2)**2)
+
+            gt += [y_true]; pred += [dist.detach()]
 
         gt   = torch.cat(list(map(lambda x: x             ,   gt)), dim=0).cpu().numpy()
         pred = torch.cat(list(map(lambda x: x.unsqueeze(0), pred)), dim=0).cpu().numpy()

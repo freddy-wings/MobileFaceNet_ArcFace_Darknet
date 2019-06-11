@@ -57,7 +57,6 @@ def mainUnsupervised(classifypath, verifypath):
     criterion = MobileFacenetUnsupervisedLoss(classifyData.n_class)
 
     ignored_params = list(map(id, net.linear1.parameters()))
-    ignored_params += list(map(id, criterion.parameters()))
     prelu_params = []
     for m in net.modules():
         if isinstance(m, nn.PReLU):
@@ -68,7 +67,8 @@ def mainUnsupervised(classifypath, verifypath):
     params = [
         {'params': base_params, 'weight_decay': 4e-5},
         {'params': net.linear1.parameters(), 'weight_decay': 4e-4},
-        {'params': criterion.parameters(), 'weight_decay': 4e-4},
+        # {'params': criterion.parameters(), 'weight_decay': 4e-4},
+        {'params': criterion.m, 'weight_decay': 4e-4},
         {'params': prelu_params, 'weight_decay': 0.0}
     ]
     

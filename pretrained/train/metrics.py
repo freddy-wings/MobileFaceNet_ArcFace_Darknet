@@ -105,10 +105,10 @@ class MobileFacenetUnsupervisedLoss(nn.Module):
         Notes:
             p_{ik} = \frac{\exp( - \frac{||x^{(i)} - m_k||^2}{s_k^2})}{\sum_j \exp( - \frac{||x^{(i)} - m_j||^2}{s_j^2})}
         """
-        y = - torch.norm(x - m, dim=1)
+        y = torch.norm(x - m, dim=1)
         if s is not None:
             y = y / s
-        y = y**2
+        y = - y**2
         y = self._softmax(y)
         return y
 
