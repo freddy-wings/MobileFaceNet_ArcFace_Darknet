@@ -21,7 +21,6 @@ static network* pnet;
 static network* rnet;
 static network* onet;
 
-#define THRESH 0.3
 #define N 128
 
 static network* mobilefacenet;
@@ -31,6 +30,7 @@ static int g_initialized = 0;
 static float* g_feat_saved = NULL;
 static float* g_feat_toverify = NULL;
 static float g_cosine = 0;
+static float g_thresh = 0.3;
 static int g_isOne = -1;
 
 image _frame()
@@ -137,14 +137,19 @@ void* display_frame_in_thread(void* ptr)
         generate_feature(im, box, mark, g_feat_toverify);
 
         g_cosine = distCosine(g_feat_saved, g_feat_toverify, N*2);
-        g_isOne = g_cosine < THRESH? 0: 1;
+        g_isOne = g_cosine < g_thresh? 0: 1;
+    } else if (c == '[') {
+        g_thresh -= 0.05;
+    } else if (c == ']') {
+        g_thresh += 0.05;
     }
 
     printf("\033[2J");
     printf("\033[1;1H");
     printf("\nFPS:%.1f\n", g_fps);
-    printf("Objects:%d\n", g_ndets);
+    printf("Objects:%d\n\n", g_ndets);
     printf("Initialized:%d\n", g_initialized);
+    printf("Thresh:%.4f\n", g_thresh);
     printf("Cosine:%.4f\n", g_cosine);
     printf("Verify:%d\n", g_isOne);
 
@@ -174,8 +179,8 @@ int verify_video_demo(int argc, char **argv)
         printf("failed!\n");
         return -1;
     }
-    cvSetCaptureProperty(g_cvCap, CV_CAP_PROP_FRAME_HEIGHT, H);
-    cvSetCaptureProperty(g_cvCap, CV_CAP_PROP_FRAME_WIDTH, W);
+    // cvSetCaptureProperty(g_cvCap, CV_CAP_PROP_FRAME_HEIGHT, H);
+    // cvSetCaptureProperty(g_cvCap, CV_CAP_PROP_FRAME_WIDTH, W);
     
     g_imFrame[0] = _frame();
     g_imFrame[1] = copy_image(g_imFrame[0]);
@@ -194,6 +199,7 @@ int verify_video_demo(int argc, char **argv)
     // g_aligned = initAlignedOffset();
     g_aligned = initAligned();
     g_mode = find_int_arg(argc, argv, "--mode", 1);
+    g_thresh = find_float_arg(argc, argv, "--thresh", 0.3);
     g_feat_saved = calloc(2*N, sizeof(float));
     g_feat_toverify = calloc(2*N, sizeof(float));
     printf("OK!\n");
