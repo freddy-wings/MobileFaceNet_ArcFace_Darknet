@@ -12,7 +12,7 @@ int main(int argc, char** argv)
         fprintf(stderr, "\n");
         fprintf(stderr, "Optional:\n");
         fprintf(stderr, "    --video    video mode;\n");
-        fprintf(stderr, "    --load     load feature if set, for video mode only;\n");
+        fprintf(stderr, "    --name xxx load feature, for video mode only;\n");
         fprintf(stderr, "\n");
         fprintf(stderr, "  for MobileFacenet:\n");
         fprintf(stderr, "    --image1   path of image1   default `images/Aaron_Peirsol_0001.jpg`;\n");

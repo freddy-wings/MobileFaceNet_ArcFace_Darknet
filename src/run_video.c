@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "mtcnn.h"
 #include "mobilefacenet.h"
 #include "crop_align.h"
@@ -39,6 +40,8 @@ static float* g_feat_toverify = NULL;
 static float g_cosine = 0;
 static float g_thresh = 0.3;
 static int g_isOne = -1;
+
+static char g_featurefile[256] = {0};
 
 image _frame()
 {
@@ -86,16 +89,16 @@ void generate_feature(image im, landmark mark, float* X)
     free_image(warped); free_image(cvt);
 }
 
-void save_feature(float* X)
+void save_feature(char* filename, float* X)
 {
-    FILE* fp = fopen("build/feat_saved.feature", "w");
+    FILE* fp = fopen(filename, "w");
     fwrite(X, sizeof(float), N*2, fp);
     fclose(fp);
 }
 
-void load_feature(float* X)
+void load_feature(char* filename, float* X)
 {
-    FILE* fp = fopen("build/feat_saved.feature", "r");
+    FILE* fp = fopen(filename, "r");
     fread(X, sizeof(float), N*2, fp);
     fclose(fp);
 }
@@ -268,7 +271,7 @@ void* display_frame_in_thread(void* ptr)
         if (idx < 0) return 0;
         bbox box = g_dets[idx].bx; landmark mark = g_dets[idx].mk;
         generate_feature(im, mark, g_feat_saved);
-        save_feature(g_feat_saved);
+        save_feature(g_featurefile, g_feat_saved);
 
         g_initialized = 1;
     } else if (c == 'v') {  // verify
@@ -344,8 +347,10 @@ int verify_video_demo(int argc, char **argv)
     g_thresh = find_float_arg(argc, argv, "--thresh", 0.5);
     g_feat_saved = calloc(2*N, sizeof(float));
     g_feat_toverify = calloc(2*N, sizeof(float));
-    if (find_arg(argc, argv, "--load")){
-        load_feature(g_feat_saved);
+    char* name = find_char_arg(argc, argv, "--name", "xyb");
+    sprintf(g_featurefile, "build/%s.feature", name);
+    if (access(g_featurefile, F_OK) == 0){
+        load_feature(g_featurefile, g_feat_saved);
         g_initialized = 1;
     }
     printf("OK!\n");
