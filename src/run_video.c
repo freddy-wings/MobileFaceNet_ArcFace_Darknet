@@ -4,7 +4,7 @@
 
 static int g_videoDone = 0;
 static char* winname = "frame";
-static CvFont font;
+static CvFont g_font;
 
 static CvCapture* g_cvCap = NULL;
 static image g_imFrame[3];
@@ -15,6 +15,13 @@ static double g_fps;
 static int g_running = 0;
 static detect* g_dets = NULL;
 static int g_ndets = 0;
+
+// 不晃
+static int g_noFrame = 0;
+static float g_filter = 0.85;
+static float g_score = 0;
+static bbox g_box = {0};
+static landmark g_mark = {0};
 
 static params p;
 static network* pnet;
@@ -63,10 +70,9 @@ void* detect_frame_in_thread(void* ptr)
     g_running = 0;
 }
 
-void generate_feature(image im, bbox box, landmark mark, float* X)
+void generate_feature(image im, landmark mark, float* X)
 {
     float* x = NULL;
-    // image warped = image_crop_aligned(im, box, mark, g_aligned, H, W, g_mode);
     image warped = image_aligned_v2(im, mark, g_aligned, H, W, g_mode);
     image cvt = convert_mobilefacenet_image(warped);
     
@@ -80,38 +86,172 @@ void generate_feature(image im, bbox box, landmark mark, float* X)
     free_image(warped); free_image(cvt);
 }
 
+void save_feature(float* X)
+{
+    FILE* fp = fopen("build/feat_saved.feature", "w");
+    fwrite(X, sizeof(float), N*2, fp);
+    fclose(fp);
+}
+
+void load_feature(float* X)
+{
+    FILE* fp = fopen("build/feat_saved.feature", "r");
+    fread(X, sizeof(float), N*2, fp);
+    fclose(fp);
+}
+
+/*
+ * 2019.7.2 删除 
+ */
+// void* display_frame_in_thread(void* ptr)
+// {
+//     while(g_running);
+
+//     image im = g_imFrame[(g_index + 1) % 3];
+//     IplImage* iplFrame = image_to_ipl(im);
+//     for (int i = 0; i < g_ndets; i++ ){
+//         detect det = g_dets[i];
+//         float score = det.score;
+//         bbox bx = det.bx;
+//         landmark mk = det.mk;
+
+//         char buff[256];
+//         sprintf(buff, "%.2f", score);
+//         cvPutText(iplFrame, buff, cvPoint((int)bx.x1, (int)bx.y1),
+//                     &font, cvScalar(0, 0, 255, 0));
+
+//         cvRectangle(iplFrame, cvPoint((int)bx.x1, (int)bx.y1),
+//                     cvPoint((int)bx.x2, (int)bx.y2),
+//                     cvScalar(255, 255, 255, 0), 1, 8, 0);
+
+//         cvCircle(iplFrame, cvPoint((int)mk.x1, (int)mk.y1),
+//                     1, cvScalar(255, 255, 255, 0), 1, 8, 0);
+//         cvCircle(iplFrame, cvPoint((int)mk.x2, (int)mk.y2),
+//                     1, cvScalar(255, 255, 255, 0), 1, 8, 0);
+//         cvCircle(iplFrame, cvPoint((int)mk.x3, (int)mk.y3),
+//                     1, cvScalar(255, 255, 255, 0), 1, 8, 0);
+//         cvCircle(iplFrame, cvPoint((int)mk.x4, (int)mk.y4),
+//                     1, cvScalar(255, 255, 255, 0), 1, 8, 0);
+//         cvCircle(iplFrame, cvPoint((int)mk.x5, (int)mk.y5),
+//                     1, cvScalar(255, 255, 255, 0), 1, 8, 0);
+//     }
+//     im = ipl_to_image(iplFrame);
+//     cvReleaseImage(&iplFrame);
+
+//     int c = show_image(im, winname, 1);
+
+
+//     if (c != -1) c = c%256;
+//     if (c == 27) {          // Esc
+//         g_videoDone = 1;
+//         return 0;
+//     } else if (c == 's') {  // save feature
+//         im = g_imFrame[(g_index + 1) % 3];
+//         int idx = keep_one(g_dets, g_ndets, im);
+//         if (idx < 0) return 0;
+//         bbox box = g_dets[idx].bx; landmark mark = g_dets[idx].mk;
+//         generate_feature(im, mark, g_feat_saved);
+//         g_initialized = 1;
+//     } else if (c == 'v') {  // verify
+//         im = g_imFrame[(g_index + 1) % 3];
+//         int idx = keep_one(g_dets, g_ndets, im);
+//         if (idx < 0) return 0;
+//         bbox box = g_dets[idx].bx; landmark mark = g_dets[idx].mk;
+//         generate_feature(im, mark, g_feat_toverify);
+
+//         g_cosine = distCosine(g_feat_saved, g_feat_toverify, N*2);
+//         g_isOne = g_cosine < g_thresh? 0: 1;
+//     } else if (c == '[') {
+//         g_thresh -= 0.05;
+//     } else if (c == ']') {
+//         g_thresh += 0.05;
+//     }
+
+//     printf("\033[2J");
+//     printf("\033[1;1H");
+//     printf("\nFPS:%.1f\n", g_fps);
+//     printf("Objects:%d\n\n", g_ndets);
+//     printf("Initialized:%d\n", g_initialized);
+//     printf("Thresh:%.4f\n", g_thresh);
+//     printf("Cosine:%.4f\n", g_cosine);
+//     printf("Verify:%d\n", g_isOne);
+
+//     return 0;
+// }
+
+/*
+ * 2019.7.2 添加
+ */
 void* display_frame_in_thread(void* ptr)
 {
     while(g_running);
 
     image im = g_imFrame[(g_index + 1) % 3];
     IplImage* iplFrame = image_to_ipl(im);
-    for (int i = 0; i < g_ndets; i++ ){
+    
+    float filter_inv = 1 - g_filter;
+
+    int i = keep_one(g_dets, g_ndets, im);
+    if (i != -1){
+        g_noFrame = 0;
+
         detect det = g_dets[i];
-        float score = det.score;
-        bbox bx = det.bx;
-        landmark mk = det.mk;
+        g_score = det.score;
+        if (g_box.x1 == 0 && g_box.x2 == 0 && g_box.y1 == 0 && g_box.y2 == 0){
+            g_box = det.bx;
+            g_mark = det.mk;
+        } else {
+            g_box.x1  = g_filter*g_box.x1 + filter_inv*det.bx.x1;
+            g_box.x2  = g_filter*g_box.x2 + filter_inv*det.bx.x2;
+            g_box.y1  = g_filter*g_box.y1 + filter_inv*det.bx.y1;
+            g_box.y2  = g_filter*g_box.y2 + filter_inv*det.bx.y2;
+            g_mark.x1 = g_filter*g_mark.x1 + filter_inv*det.mk.x1;
+            g_mark.x2 = g_filter*g_mark.x2 + filter_inv*det.mk.x2;
+            g_mark.x3 = g_filter*g_mark.x3 + filter_inv*det.mk.x3;
+            g_mark.x4 = g_filter*g_mark.x4 + filter_inv*det.mk.x4;
+            g_mark.x5 = g_filter*g_mark.x5 + filter_inv*det.mk.x5;
+            g_mark.y1 = g_filter*g_mark.y1 + filter_inv*det.mk.y1;
+            g_mark.y2 = g_filter*g_mark.y2 + filter_inv*det.mk.y2;
+            g_mark.y3 = g_filter*g_mark.y3 + filter_inv*det.mk.y3;
+            g_mark.y4 = g_filter*g_mark.y4 + filter_inv*det.mk.y4;
+            g_mark.y5 = g_filter*g_mark.y5 + filter_inv*det.mk.y5;
+        }
 
-        char buff[256];
-        sprintf(buff, "%.2f", score);
-        cvPutText(iplFrame, buff, cvPoint((int)bx.x1, (int)bx.y1),
-                    &font, cvScalar(0, 0, 255, 0));
+    } else {
+        if (g_noFrame < 5){
+            g_noFrame++;
+        } else {
+            g_cosine = 0; g_score = 0; g_box.x1  = 0; g_box.x2  = 0; g_box.y1  = 0; g_box.y2  = 0;
+            g_mark.x1 = 0; g_mark.x2 = 0; g_mark.x3 = 0; g_mark.x4 = 0; g_mark.x5 = 0;
+            g_mark.y1 = 0; g_mark.y2 = 0; g_mark.y3 = 0; g_mark.y4 = 0; g_mark.y5 = 0;
+        }
+    }
 
-        cvRectangle(iplFrame, cvPoint((int)bx.x1, (int)bx.y1),
-                    cvPoint((int)bx.x2, (int)bx.y2),
+    if (g_noFrame < 5){
+        char buff[256]; 
+        sprintf(buff, "%.2f", g_score);
+        cvPutText(iplFrame, buff, cvPoint((int)g_box.x1, (int)g_box.y1),
+                    &g_font, cvScalar(0, 0, 255, 0));
+        sprintf(buff, "%.2f", g_cosine);
+        cvPutText(iplFrame, buff, cvPoint((int)g_box.x2, (int)g_box.y1),
+                    &g_font, cvScalar(0, 0, 255, 0));
+
+        cvRectangle(iplFrame, cvPoint((int)g_box.x1, (int)g_box.y1),
+                    cvPoint((int)g_box.x2, (int)g_box.y2),
                     cvScalar(255, 255, 255, 0), 1, 8, 0);
 
-        cvCircle(iplFrame, cvPoint((int)mk.x1, (int)mk.y1),
-                    1, cvScalar(255, 255, 255, 0), 1, 8, 0);
-        cvCircle(iplFrame, cvPoint((int)mk.x2, (int)mk.y2),
-                    1, cvScalar(255, 255, 255, 0), 1, 8, 0);
-        cvCircle(iplFrame, cvPoint((int)mk.x3, (int)mk.y3),
-                    1, cvScalar(255, 255, 255, 0), 1, 8, 0);
-        cvCircle(iplFrame, cvPoint((int)mk.x4, (int)mk.y4),
-                    1, cvScalar(255, 255, 255, 0), 1, 8, 0);
-        cvCircle(iplFrame, cvPoint((int)mk.x5, (int)mk.y5),
-                    1, cvScalar(255, 255, 255, 0), 1, 8, 0);
+        // cvCircle(iplFrame, cvPoint((int)g_mark.x1, (int)g_mark.y1),
+        //             1, cvScalar(255, 255, 255, 0), 1, 8, 0);
+        // cvCircle(iplFrame, cvPoint((int)g_mark.x2, (int)g_mark.y2),
+        //             1, cvScalar(255, 255, 255, 0), 1, 8, 0);
+        // cvCircle(iplFrame, cvPoint((int)g_mark.x3, (int)g_mark.y3),
+        //             1, cvScalar(255, 255, 255, 0), 1, 8, 0);
+        // cvCircle(iplFrame, cvPoint((int)g_mark.x4, (int)g_mark.y4),
+        //             1, cvScalar(255, 255, 255, 0), 1, 8, 0);
+        // cvCircle(iplFrame, cvPoint((int)g_mark.x5, (int)g_mark.y5),
+        //             1, cvScalar(255, 255, 255, 0), 1, 8, 0);
     }
+
     im = ipl_to_image(iplFrame);
     cvReleaseImage(&iplFrame);
 
@@ -127,14 +267,16 @@ void* display_frame_in_thread(void* ptr)
         int idx = keep_one(g_dets, g_ndets, im);
         if (idx < 0) return 0;
         bbox box = g_dets[idx].bx; landmark mark = g_dets[idx].mk;
-        generate_feature(im, box, mark, g_feat_saved);
+        generate_feature(im, mark, g_feat_saved);
+        save_feature(g_feat_saved);
+
         g_initialized = 1;
     } else if (c == 'v') {  // verify
         im = g_imFrame[(g_index + 1) % 3];
         int idx = keep_one(g_dets, g_ndets, im);
         if (idx < 0) return 0;
         bbox box = g_dets[idx].bx; landmark mark = g_dets[idx].mk;
-        generate_feature(im, box, mark, g_feat_toverify);
+        generate_feature(im, mark, g_feat_toverify);
 
         g_cosine = distCosine(g_feat_saved, g_feat_toverify, N*2);
         g_isOne = g_cosine < g_thresh? 0: 1;
@@ -187,7 +329,7 @@ int verify_video_demo(int argc, char **argv)
     g_imFrame[2] = copy_image(g_imFrame[0]);
 
     cvNamedWindow(winname, CV_WINDOW_AUTOSIZE);
-    cvInitFont(&font, CV_FONT_HERSHEY_SIMPLEX, 0.5, 0.5, 1, 2, 8);
+    cvInitFont(&g_font, CV_FONT_HERSHEY_SIMPLEX, 0.8, 0.8, 1, 2, 8);
     printf("OK!\n");
 
     printf("Initializing detection...");
@@ -199,9 +341,13 @@ int verify_video_demo(int argc, char **argv)
     // g_aligned = initAlignedOffset();
     g_aligned = initAligned();
     g_mode = find_int_arg(argc, argv, "--mode", 1);
-    g_thresh = find_float_arg(argc, argv, "--thresh", 0.3);
+    g_thresh = find_float_arg(argc, argv, "--thresh", 0.5);
     g_feat_saved = calloc(2*N, sizeof(float));
     g_feat_toverify = calloc(2*N, sizeof(float));
+    if (find_arg(argc, argv, "--load")){
+        load_feature(g_feat_saved);
+        g_initialized = 1;
+    }
     printf("OK!\n");
 
     pthread_t thread_read;
