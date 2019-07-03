@@ -1,6 +1,6 @@
 #include <unistd.h>
 #include "mtcnn.h"
-#include "g_mobilefacenet.h"
+#include "mobilefacenet.h"
 #include "crop_align.h"
 
 // 显示相关
