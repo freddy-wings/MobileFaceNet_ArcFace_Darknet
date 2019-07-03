@@ -1,6 +1,6 @@
 #include <unistd.h>
 #include "mtcnn.h"
-#include "mobilefacenet.h"
+#include "g_mobilefacenet.h"
 #include "crop_align.h"
 
 // 显示相关
@@ -23,24 +23,24 @@ static double g_fps;
 static int g_running = 0;
 
 // 不晃
-static int g_noFrame = 0;
-static float g_filter = 0.85;
+static int g_noFrame = 0;               // 无人脸帧计数，当超过5帧无人脸，则清除`g_box`等
+static float g_filter = 0.85;           // 滤波系数
 static float g_score = 0;
 static bbox g_box = {0};
 static landmark g_mark = {0};
 static landmark g_aligned = {0};
 
 // 检测
-static params p;
-static network* pnet;
-static network* rnet;
-static network* onet;
-static detect* g_dets = NULL;
-static int g_ndets = 0;
+static params g_mtcnnParam;             // MTCNN参数
+static network* g_pnet; 
+static network* g_rnet;
+static network* g_onet;
+static detect* g_dets = NULL;           // 当前帧检测得结果
+static int g_ndets = 0;                 // 当前帧检测人脸个数
 
 // 验证
-#define N 128
-static network* mobilefacenet;
+#define N 128                           // 单个特征维度
+static network* g_mobilefacenet;
 static int g_mode = 0;                  // 图像对齐模式
 static int g_initialized = 0;           // 已保存有特征
 static float* g_feat_saved = NULL;      // 已保存特征
@@ -91,7 +91,7 @@ void* detect_frame_in_thread(void* ptr)
 
     image frame = g_imFrame[(g_index + 2) % 3];
     g_dets = realloc(g_dets, 0); g_ndets = 0;
-    detect_image(pnet, rnet, onet, frame, &g_ndets, &g_dets, p);
+    detect_image(g_pnet, g_rnet, g_onet, frame, &g_ndets, &g_dets, g_mtcnnParam);
 
     g_running = 0;
 }
@@ -109,11 +109,11 @@ void generate_feature(image im, landmark mark, float* X)
     image warped = image_aligned_v2(im, mark, g_aligned, H, W, g_mode);
     image cvt = convert_mobilefacenet_image(warped);
     
-    x = network_predict(mobilefacenet, cvt.data);
+    x = network_predict(g_mobilefacenet, cvt.data);
     memcpy(X,     x, N*sizeof(float));
 
     flip_image(cvt);
-    x = network_predict(mobilefacenet, cvt.data);
+    x = network_predict(g_mobilefacenet, cvt.data);
     memcpy(X + N, x, N*sizeof(float));
 
     free_image(warped); free_image(cvt);
@@ -362,10 +362,10 @@ void* display_frame_in_thread(void* ptr)
  */
 int verify_video_demo(int argc, char **argv)
 {
-    pnet = load_mtcnn_net("PNet");
-    rnet = load_mtcnn_net("RNet");
-    onet = load_mtcnn_net("ONet");
-    mobilefacenet = load_mobilefacenet();
+    g_pnet = load_mtcnn_net("PNet");
+    g_rnet = load_mtcnn_net("RNet");
+    g_onet = load_mtcnn_net("ONet");
+    g_mobilefacenet = load_mobilefacenet();
     printf("\n\n");
 
     // =================================================================================
@@ -399,7 +399,7 @@ int verify_video_demo(int argc, char **argv)
 
     // =================================================================================
     printf("Initializing detection...");
-    p = initParams(argc, argv);
+    g_mtcnnParam = initParams(argc, argv);
     g_dets = calloc(0, sizeof(detect)); g_ndets = 0;
     printf("OK!\n");
 
@@ -449,10 +449,10 @@ int verify_video_demo(int argc, char **argv)
     cvReleaseCapture(&g_cvCap);
     cvDestroyWindow(g_winname);
 
-    free_network(pnet);
-    free_network(rnet);
-    free_network(onet);
-    free_network(mobilefacenet);
+    free_network(g_pnet);
+    free_network(g_rnet);
+    free_network(g_onet);
+    free_network(g_mobilefacenet);
     
     free(g_feat_saved); free(g_feat_toverify);
 
