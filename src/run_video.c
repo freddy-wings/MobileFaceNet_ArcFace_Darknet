@@ -3,6 +3,7 @@
 #include "mobilefacenet.h"
 #include "crop_align.h"
 
+// 显示相关
 static int g_videoDone = 0;
 static char* g_winname = "frame";
 static char* g_trackbarDetection    = "detect";
@@ -12,6 +13,7 @@ static int g_valueDetection = 0;
 static int g_valueVerification = 0;
 static CvFont g_font;
 
+// 图像采集
 static CvCapture* g_cvCap = NULL;
 static image g_imFrame[3];
 static int g_index = 0;
@@ -19,8 +21,6 @@ static int g_index = 0;
 static double g_time;
 static double g_fps;
 static int g_running = 0;
-static detect* g_dets = NULL;
-static int g_ndets = 0;
 
 // 不晃
 static int g_noFrame = 0;
@@ -28,26 +28,34 @@ static float g_filter = 0.85;
 static float g_score = 0;
 static bbox g_box = {0};
 static landmark g_mark = {0};
+static landmark g_aligned = {0};
 
+// 检测
 static params p;
 static network* pnet;
 static network* rnet;
 static network* onet;
+static detect* g_dets = NULL;
+static int g_ndets = 0;
 
+// 验证
 #define N 128
-
 static network* mobilefacenet;
-static landmark g_aligned = {0};
-static int g_mode = 0;
-static int g_initialized = 0;
-static float* g_feat_saved = NULL;
-static float* g_feat_toverify = NULL;
-static float g_cosine = 0;
-static float g_thresh = 0.5;
-static int g_isOne = -1;
+static int g_mode = 0;                  // 图像对齐模式
+static int g_initialized = 0;           // 已保存有特征
+static float* g_feat_saved = NULL;      // 已保存特征
+static float* g_feat_toverify = NULL;   // 待验证特征
+static float g_cosine = 0;              // 计算得余弦值
+static float g_thresh = 0.5;            // 阈值
+static int g_isOne = -1;                // 是否为同一人
+static char g_featurefile[256] = {0};   // 保存文件名
 
-static char g_featurefile[256] = {0};
-
+/*
+ * 读取一帧图像
+ * @params:
+ * @returns:
+ * -    dst: RGB
+ */
 image _frame()
 {
     IplImage* iplFrame = cvQueryFrame(g_cvCap);
@@ -56,6 +64,11 @@ image _frame()
     return dst;
 }
 
+/*
+ * 多线程读取图像函数，存放在当前索引位置
+ * @params:
+ * -    ptr
+ */
 void* read_frame_in_thread(void* ptr)
 {
     free_image(g_imFrame[g_index]);
@@ -67,6 +80,11 @@ void* read_frame_in_thread(void* ptr)
     return 0;
 }
 
+/*
+ * 多线程检测图像函数
+ * @params:
+ * -    ptr
+ */
 void* detect_frame_in_thread(void* ptr)
 {
     g_running = 1;
@@ -78,6 +96,13 @@ void* detect_frame_in_thread(void* ptr)
     g_running = 0;
 }
 
+/*
+ * 计算人脸特征，输出256维
+ * @params:
+ * -    im: 输入RGB图像
+ * -    mark: 检测到的人脸关键点位置
+ * -    X:  特征地址
+ */
 void generate_feature(image im, landmark mark, float* X)
 {
     float* x = NULL;
@@ -94,6 +119,12 @@ void generate_feature(image im, landmark mark, float* X)
     free_image(warped); free_image(cvt);
 }
 
+/*
+ * 保存人脸特征至文件
+ * @params:
+ * -    filename: 保存文件名
+ * -    X:  特征地址
+ */
 void save_feature(char* filename, float* X)
 {
     FILE* fp = fopen(filename, "w");
@@ -101,6 +132,12 @@ void save_feature(char* filename, float* X)
     fclose(fp);
 }
 
+/*
+ * 读取人脸特征至文件
+ * @params:
+ * -    filename: 读取文件名
+ * -    X:  特征地址
+ */
 void load_feature(char* filename, float* X)
 {
     FILE* fp = fopen(filename, "r");
@@ -108,87 +145,95 @@ void load_feature(char* filename, float* X)
     fclose(fp);
 }
 
+#if 0
 /*
  * 2019.7.2 删除 
  */
-// void* display_frame_in_thread(void* ptr)
-// {
-//     while(g_running);
+void* display_frame_in_thread(void* ptr)
+{
+    while(g_running);
 
-//     image im = g_imFrame[(g_index + 1) % 3];
-//     IplImage* iplFrame = image_to_ipl(im);
-//     for (int i = 0; i < g_ndets; i++ ){
-//         detect det = g_dets[i];
-//         float score = det.score;
-//         bbox bx = det.bx;
-//         landmark mk = det.mk;
+    image im = g_imFrame[(g_index + 1) % 3];
+    IplImage* iplFrame = image_to_ipl(im);
+    for (int i = 0; i < g_ndets; i++ ){
+        detect det = g_dets[i];
+        float score = det.score;
+        bbox bx = det.bx;
+        landmark mk = det.mk;
 
-//         char buff[256];
-//         sprintf(buff, "%.2f", score);
-//         cvPutText(iplFrame, buff, cvPoint((int)bx.x1, (int)bx.y1),
-//                     &font, cvScalar(0, 0, 255, 0));
+        char buff[256];
+        sprintf(buff, "%.2f", score);
+        cvPutText(iplFrame, buff, cvPoint((int)bx.x1, (int)bx.y1),
+                    &font, cvScalar(0, 0, 255, 0));
 
-//         cvRectangle(iplFrame, cvPoint((int)bx.x1, (int)bx.y1),
-//                     cvPoint((int)bx.x2, (int)bx.y2),
-//                     cvScalar(255, 255, 255, 0), 1, 8, 0);
+        cvRectangle(iplFrame, cvPoint((int)bx.x1, (int)bx.y1),
+                    cvPoint((int)bx.x2, (int)bx.y2),
+                    cvScalar(255, 255, 255, 0), 1, 8, 0);
 
-//         cvCircle(iplFrame, cvPoint((int)mk.x1, (int)mk.y1),
-//                     1, cvScalar(255, 255, 255, 0), 1, 8, 0);
-//         cvCircle(iplFrame, cvPoint((int)mk.x2, (int)mk.y2),
-//                     1, cvScalar(255, 255, 255, 0), 1, 8, 0);
-//         cvCircle(iplFrame, cvPoint((int)mk.x3, (int)mk.y3),
-//                     1, cvScalar(255, 255, 255, 0), 1, 8, 0);
-//         cvCircle(iplFrame, cvPoint((int)mk.x4, (int)mk.y4),
-//                     1, cvScalar(255, 255, 255, 0), 1, 8, 0);
-//         cvCircle(iplFrame, cvPoint((int)mk.x5, (int)mk.y5),
-//                     1, cvScalar(255, 255, 255, 0), 1, 8, 0);
-//     }
-//     im = ipl_to_image(iplFrame);
-//     cvReleaseImage(&iplFrame);
+        cvCircle(iplFrame, cvPoint((int)mk.x1, (int)mk.y1),
+                    1, cvScalar(255, 255, 255, 0), 1, 8, 0);
+        cvCircle(iplFrame, cvPoint((int)mk.x2, (int)mk.y2),
+                    1, cvScalar(255, 255, 255, 0), 1, 8, 0);
+        cvCircle(iplFrame, cvPoint((int)mk.x3, (int)mk.y3),
+                    1, cvScalar(255, 255, 255, 0), 1, 8, 0);
+        cvCircle(iplFrame, cvPoint((int)mk.x4, (int)mk.y4),
+                    1, cvScalar(255, 255, 255, 0), 1, 8, 0);
+        cvCircle(iplFrame, cvPoint((int)mk.x5, (int)mk.y5),
+                    1, cvScalar(255, 255, 255, 0), 1, 8, 0);
+    }
+    im = ipl_to_image(iplFrame);
+    cvReleaseImage(&iplFrame);
 
-//     int c = show_image(im, g_winname, 1);
+    int c = show_image(im, g_winname, 1);
 
 
-//     if (c != -1) c = c%256;
-//     if (c == 27) {          // Esc
-//         g_videoDone = 1;
-//         return 0;
-//     } else if (c == 's') {  // save feature
-//         im = g_imFrame[(g_index + 1) % 3];
-//         int idx = keep_one(g_dets, g_ndets, im);
-//         if (idx < 0) return 0;
-//         bbox box = g_dets[idx].bx; landmark mark = g_dets[idx].mk;
-//         generate_feature(im, mark, g_feat_saved);
-//         g_initialized = 1;
-//     } else if (c == 'v') {  // verify
-//         im = g_imFrame[(g_index + 1) % 3];
-//         int idx = keep_one(g_dets, g_ndets, im);
-//         if (idx < 0) return 0;
-//         bbox box = g_dets[idx].bx; landmark mark = g_dets[idx].mk;
-//         generate_feature(im, mark, g_feat_toverify);
+    if (c != -1) c = c%256;
+    if (c == 27) {          // Esc
+        g_videoDone = 1;
+        return 0;
+    } else if (c == 's') {  // save feature
+        im = g_imFrame[(g_index + 1) % 3];
+        int idx = keep_one(g_dets, g_ndets, im);
+        if (idx < 0) return 0;
+        bbox box = g_dets[idx].bx; landmark mark = g_dets[idx].mk;
+        generate_feature(im, mark, g_feat_saved);
+        g_initialized = 1;
+    } else if (c == 'v') {  // verify
+        im = g_imFrame[(g_index + 1) % 3];
+        int idx = keep_one(g_dets, g_ndets, im);
+        if (idx < 0) return 0;
+        bbox box = g_dets[idx].bx; landmark mark = g_dets[idx].mk;
+        generate_feature(im, mark, g_feat_toverify);
 
-//         g_cosine = distCosine(g_feat_saved, g_feat_toverify, N*2);
-//         g_isOne = g_cosine < g_thresh? 0: 1;
-//     } else if (c == '[') {
-//         g_thresh -= 0.05;
-//     } else if (c == ']') {
-//         g_thresh += 0.05;
-//     }
+        g_cosine = distCosine(g_feat_saved, g_feat_toverify, N*2);
+        g_isOne = g_cosine < g_thresh? 0: 1;
+    } else if (c == '[') {
+        g_thresh -= 0.05;
+    } else if (c == ']') {
+        g_thresh += 0.05;
+    }
 
-//     printf("\033[2J");
-//     printf("\033[1;1H");
-//     printf("\nFPS:%.1f\n", g_fps);
-//     printf("Objects:%d\n\n", g_ndets);
-//     printf("Initialized:%d\n", g_initialized);
-//     printf("Thresh:%.4f\n", g_thresh);
-//     printf("Cosine:%.4f\n", g_cosine);
-//     printf("Verify:%d\n", g_isOne);
+    printf("\033[2J");
+    printf("\033[1;1H");
+    printf("\nFPS:%.1f\n", g_fps);
+    printf("Objects:%d\n\n", g_ndets);
+    printf("Initialized:%d\n", g_initialized);
+    printf("Thresh:%.4f\n", g_thresh);
+    printf("Cosine:%.4f\n", g_cosine);
+    printf("Verify:%d\n", g_isOne);
 
-//     return 0;
-// }
+    return 0;
+}
 
+#else
 /*
+ * 多线程图像显示
  * 2019.7.2 添加
+ * @params:
+ * -    ptr
+ * @notes:
+ * -    为防止框抖动，增加滤波；
+ * -    仅显示一个人脸框；
  */
 void* display_frame_in_thread(void* ptr)
 {
@@ -310,7 +355,11 @@ void* display_frame_in_thread(void* ptr)
 
     return 0;
 }
+#endif
 
+/*
+ * 视频demo主函数
+ */
 int verify_video_demo(int argc, char **argv)
 {
     pnet = load_mtcnn_net("PNet");
