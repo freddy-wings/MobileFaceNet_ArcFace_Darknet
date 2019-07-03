@@ -4,7 +4,12 @@
 #include "crop_align.h"
 
 static int g_videoDone = 0;
-static char* winname = "frame";
+static char* g_winname = "frame";
+static char* g_trackbarDetection    = "detect";
+static char* g_trackbarVerification = "verify";
+static int g_valueMax = 100;
+static int g_valueDetection = 0;
+static int g_valueVerification = 0;
 static CvFont g_font;
 
 static CvCapture* g_cvCap = NULL;
@@ -38,7 +43,7 @@ static int g_initialized = 0;
 static float* g_feat_saved = NULL;
 static float* g_feat_toverify = NULL;
 static float g_cosine = 0;
-static float g_thresh = 0.3;
+static float g_thresh = 0.5;
 static int g_isOne = -1;
 
 static char g_featurefile[256] = {0};
@@ -141,7 +146,7 @@ void load_feature(char* filename, float* X)
 //     im = ipl_to_image(iplFrame);
 //     cvReleaseImage(&iplFrame);
 
-//     int c = show_image(im, winname, 1);
+//     int c = show_image(im, g_winname, 1);
 
 
 //     if (c != -1) c = c%256;
@@ -200,6 +205,7 @@ void* display_frame_in_thread(void* ptr)
 
         detect det = g_dets[i];
         g_score = det.score;
+        g_valueDetection = (int)(g_score*100);
         if (g_box.x1 == 0 && g_box.x2 == 0 && g_box.y1 == 0 && g_box.y2 == 0){
             g_box = det.bx;
             g_mark = det.mk;
@@ -208,16 +214,16 @@ void* display_frame_in_thread(void* ptr)
             g_box.x2  = g_filter*g_box.x2 + filter_inv*det.bx.x2;
             g_box.y1  = g_filter*g_box.y1 + filter_inv*det.bx.y1;
             g_box.y2  = g_filter*g_box.y2 + filter_inv*det.bx.y2;
-            g_mark.x1 = g_filter*g_mark.x1 + filter_inv*det.mk.x1;
-            g_mark.x2 = g_filter*g_mark.x2 + filter_inv*det.mk.x2;
-            g_mark.x3 = g_filter*g_mark.x3 + filter_inv*det.mk.x3;
-            g_mark.x4 = g_filter*g_mark.x4 + filter_inv*det.mk.x4;
-            g_mark.x5 = g_filter*g_mark.x5 + filter_inv*det.mk.x5;
-            g_mark.y1 = g_filter*g_mark.y1 + filter_inv*det.mk.y1;
-            g_mark.y2 = g_filter*g_mark.y2 + filter_inv*det.mk.y2;
-            g_mark.y3 = g_filter*g_mark.y3 + filter_inv*det.mk.y3;
-            g_mark.y4 = g_filter*g_mark.y4 + filter_inv*det.mk.y4;
-            g_mark.y5 = g_filter*g_mark.y5 + filter_inv*det.mk.y5;
+            // g_mark.x1 = g_filter*g_mark.x1 + filter_inv*det.mk.x1;
+            // g_mark.x2 = g_filter*g_mark.x2 + filter_inv*det.mk.x2;
+            // g_mark.x3 = g_filter*g_mark.x3 + filter_inv*det.mk.x3;
+            // g_mark.x4 = g_filter*g_mark.x4 + filter_inv*det.mk.x4;
+            // g_mark.x5 = g_filter*g_mark.x5 + filter_inv*det.mk.x5;
+            // g_mark.y1 = g_filter*g_mark.y1 + filter_inv*det.mk.y1;
+            // g_mark.y2 = g_filter*g_mark.y2 + filter_inv*det.mk.y2;
+            // g_mark.y3 = g_filter*g_mark.y3 + filter_inv*det.mk.y3;
+            // g_mark.y4 = g_filter*g_mark.y4 + filter_inv*det.mk.y4;
+            // g_mark.y5 = g_filter*g_mark.y5 + filter_inv*det.mk.y5;
         }
 
     } else {
@@ -225,8 +231,9 @@ void* display_frame_in_thread(void* ptr)
             g_noFrame++;
         } else {
             g_cosine = 0; g_score = 0; g_box.x1  = 0; g_box.x2  = 0; g_box.y1  = 0; g_box.y2  = 0;
-            g_mark.x1 = 0; g_mark.x2 = 0; g_mark.x3 = 0; g_mark.x4 = 0; g_mark.x5 = 0;
-            g_mark.y1 = 0; g_mark.y2 = 0; g_mark.y3 = 0; g_mark.y4 = 0; g_mark.y5 = 0;
+            // g_mark.x1 = 0; g_mark.x2 = 0; g_mark.x3 = 0; g_mark.x4 = 0; g_mark.x5 = 0;
+            // g_mark.y1 = 0; g_mark.y2 = 0; g_mark.y3 = 0; g_mark.y4 = 0; g_mark.y5 = 0;
+            g_valueDetection = g_valueVerification = 0;
         }
     }
 
@@ -243,6 +250,9 @@ void* display_frame_in_thread(void* ptr)
                     cvPoint((int)g_box.x2, (int)g_box.y2),
                     cvScalar(255, 255, 255, 0), 1, 8, 0);
 
+        cvSetTrackbarPos(g_trackbarDetection, g_winname, g_valueDetection);
+        cvSetTrackbarPos(g_trackbarVerification, g_winname, g_valueVerification);
+
         // cvCircle(iplFrame, cvPoint((int)g_mark.x1, (int)g_mark.y1),
         //             1, cvScalar(255, 255, 255, 0), 1, 8, 0);
         // cvCircle(iplFrame, cvPoint((int)g_mark.x2, (int)g_mark.y2),
@@ -258,8 +268,7 @@ void* display_frame_in_thread(void* ptr)
     im = ipl_to_image(iplFrame);
     cvReleaseImage(&iplFrame);
 
-    int c = show_image(im, winname, 1);
-
+    int c = show_image(im, g_winname, 1);
 
     if (c != -1) c = c%256;
     if (c == 27) {          // Esc
@@ -283,6 +292,7 @@ void* display_frame_in_thread(void* ptr)
 
         g_cosine = distCosine(g_feat_saved, g_feat_toverify, N*2);
         g_isOne = g_cosine < g_thresh? 0: 1;
+        g_valueVerification = (int)(g_cosine*100);
     } else if (c == '[') {
         g_thresh -= 0.05;
     } else if (c == ']') {
@@ -309,6 +319,7 @@ int verify_video_demo(int argc, char **argv)
     mobilefacenet = load_mobilefacenet();
     printf("\n\n");
 
+    // =================================================================================
     printf("Initializing Capture...");
     int index = find_int_arg(argc, argv, "--index", 0);
     if (index < 0){
@@ -331,15 +342,19 @@ int verify_video_demo(int argc, char **argv)
     g_imFrame[1] = copy_image(g_imFrame[0]);
     g_imFrame[2] = copy_image(g_imFrame[0]);
 
-    cvNamedWindow(winname, CV_WINDOW_AUTOSIZE);
+    cvNamedWindow(g_winname, CV_WINDOW_AUTOSIZE);
+    cvCreateTrackbar(g_trackbarDetection, g_winname, &g_valueDetection, g_valueMax, NULL);
+    cvCreateTrackbar(g_trackbarVerification, g_winname, &g_valueVerification, g_valueMax, NULL);
     cvInitFont(&g_font, CV_FONT_HERSHEY_SIMPLEX, 0.8, 0.8, 1, 2, 8);
     printf("OK!\n");
 
+    // =================================================================================
     printf("Initializing detection...");
     p = initParams(argc, argv);
     g_dets = calloc(0, sizeof(detect)); g_ndets = 0;
     printf("OK!\n");
 
+    // =================================================================================
     printf("Initializing verification...");
     // g_aligned = initAlignedOffset();
     g_aligned = initAligned();
@@ -355,10 +370,12 @@ int verify_video_demo(int argc, char **argv)
     }
     printf("OK!\n");
 
+    // =================================================================================
     pthread_t thread_read;
     pthread_t thread_detect;
     pthread_t thread_display;
 
+    // =================================================================================
     g_time = what_time_is_it_now();
     while(!g_videoDone){
         g_index = (g_index + 1) % 3;
@@ -375,12 +392,13 @@ int verify_video_demo(int argc, char **argv)
         pthread_join(thread_detect, 0);
         pthread_join(thread_display, 0);
     }
+    // =================================================================================
     for (int i = 0; i < 3; i++ ){
         free_image(g_imFrame[i]);
     }
     free(g_dets);
     cvReleaseCapture(&g_cvCap);
-    cvDestroyWindow(winname);
+    cvDestroyWindow(g_winname);
 
     free_network(pnet);
     free_network(rnet);
