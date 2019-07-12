@@ -3,6 +3,39 @@ import torch
 import torch.nn as nn
 from torch.nn import Parameter
 
+"""
+关于`ArcMarginProduct`中单调性的处理
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+def phi(x, m=0.5):
+    """
+    Params:
+        x: [0, pi]
+    """
+
+    th = np.cos(np.pi - m)
+    mm = np.sin(np.pi - m) * m
+
+    cos_x = np.cos(x)
+
+    # y = np.where(cos_x > 0, np.cos(x + m), np.cos(x))         # 不单调
+    y = np.where(cos_x > th, np.cos(x + m), np.cos(x) - mm)     # 单调
+
+    return y
+
+
+if __name__ == '__main__':
+
+    x = np.linspace(0, np.pi, 200)
+    y = phi(x)
+
+    plt.figure(0)
+    plt.plot(x, y)
+    plt.show()
+"""
+
 class ArcMarginProduct(nn.Module):
 
     def __init__(self, s=32.0, m=0.50, easy_margin=False):
