@@ -30,16 +30,16 @@ class ArcMarginProduct(nn.Module):
             - \cos(\theta_{y_i} + m)} = \cos \theta_{y_i} \cos m - \sin \theta_{y_i} \sin m
         """
         sine = torch.sqrt(1.0 - torch.pow(cosine, 2))
-        phi = cosine * self.cos_m - sine * self.sin_m                           #    phi = cos(cosine + m)
+        phi = cosine * self.cos_m - sine * self.sin_m                           # phi(theta) = cos(theta + m)
         if self.easy_margin:
-            phi = torch.where(cosine > 0, phi, cosine)                          # cosine = cos(cosine + m)      if cosine > 0
+            phi = torch.where(cosine > 0, phi, cosine)                          # cos(theta) = cos(theta + m)      if cos(theta) > 0
         else:
-            phi = torch.where((cosine - self.th) > 0, phi, cosine - self.mm)    # cosine = cos(cosine + m)      if cosine > cos(m) else
-                                                                                # cosine = cosine - m * sin(m)
+            phi = torch.where((cosine - self.th) > 0, phi, cosine - self.mm)    # cos(theta) = cos(theta + m)      if cos(theta) > cos(m) else
+                                                                                # cos(theta) = cos(theta) - m * sin(m)
 
         one_hot = torch.zeros(cosine.size(), device='cuda' if torch.cuda.is_available() else 'cpu')
         one_hot.scatter_(1, label.view(-1, 1).long(), 1)
-        output = (one_hot * phi) + ((1.0 - one_hot) * cosine)                   # cosine[y_i, i] = phi
+        output = (one_hot * phi) + ((1.0 - one_hot) * cosine)                   # cos(theta)[y_i, i] = phi
         output = self.s * output
         return output
 
