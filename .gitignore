@@ -15,3 +15,6 @@ data/
 
 pretrained/train/ckpt/
 pretrained/train/log/
+
+cosine_score_py.txt
+frame.jpg
